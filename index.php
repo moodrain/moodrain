@@ -6,3 +6,4 @@ $value = $client->get('foo');
 echo $value;
 $curl = new Muyu\Curl();
 echo $curl->do();
+echo 'new';
