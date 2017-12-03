@@ -2,6 +2,7 @@
     "name": "moodrain/moodrain",
     "description": "only for moodrain",
     "type": "library",
+    "version": "1.0.0",
     "authors": [
         {
             "name": "moodrain",
