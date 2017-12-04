@@ -1,0 +1,3 @@
+localhost:80
+root ./
+fastcgi / 127.0.0.1:9000 php
