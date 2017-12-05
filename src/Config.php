@@ -17,7 +17,7 @@ namespace Muyu;
  * firstInit(Array $config)
  *      Create a new muyu.json and put down $config in JSON, then exit.
  * 
- * tryInit(Array $config)
+ * tryInit(Array $config, Boolean $write = false)
  *      Try to load muyu.json, load $config in para instead if muyu.json doesn't existed.
  * 
  * set(String $key, $val)
@@ -72,14 +72,15 @@ class Config
             exit();
         }
     }
-    public function tryInit(Array $config)
+    public function tryInit(Array $config, Boolean $write = false)
     {
         if(file_exists('muyu.json'))
             $this->init(json_decode(file_get_contents('muyu.json'), true));
         else
         {
             $this->init($config);
-            file_put_contents('muyu.json', json_encode($config, JSON_PRETTY_PRINT));
+            if
+                file_put_contents('muyu.json', json_encode($config, JSON_PRETTY_PRINT));
         }
     }
     public function set(String $key, $val)
