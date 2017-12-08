@@ -10,22 +10,21 @@ class Curl
     private $responseType;
     private $data;
     private $file;
-    private $header;
     private $result;
 
-    public function __construct(String $url)
+    public function __construct($url = null)
     {
         $this->url = $url;
         $this->curl = curl_init();
         curl_setopt($this->curl, CURLOPT_RETURNTRANSFER, 1);
         curl_setopt($this->curl, CURLOPT_SSL_VERIFYPEER, 0);
     }
-    public function url(String $url)
+    public function url($url)
     {
         $this->url = $url;
         return $this;
     }
-    public function fullUrl(String $url = null)
+    public function fullUrl($url = null)
     {
         if($url)
         {
@@ -40,14 +39,14 @@ class Curl
         $this->query = $query;
         return $this;
     }
-    public function receive(String $responseType)
+    public function receive($responseType)
     {
-        if(!in_array($responseType, ['text', 'json', 'xml']))
+        if(!in_array($responseType, ['text', 'json', 'xml', 'jpg', 'png', 'gif', 'bmp']))
             throw new \Exception ('unsupported responseType');
         $this->responseType = $responseType;
         return $this;
     }
-    public function stringData(String $data)
+    public function stringData($data)
     {
         $this->data = $data;
         return $this;
@@ -57,7 +56,7 @@ class Curl
         $this->data = http_build_query($data);
         return $this;
     }
-    public function file(String $file)
+    public function file($file)
     {
         $this->file = $file;
         return $this;
@@ -101,16 +100,16 @@ class Curl
     public function content()
     {
         return $this->result['content'];
-    }
-
-    
+    } 
     public function get()
     {
+        $this->mothod = 'GET';
         curl_setopt($this->curl, CURLOPT_URL, $this->fullUrl());
         return $this->format($this->handle($this->curl));
     }
     public function post()
     {
+        $this->mothod = 'POST';
         curl_setopt($this->curl, CURLOPT_URL, $this->fullUrl());
         curl_setopt($this->curl, CURLOPT_POST, 1);
         if($this->data)
@@ -126,6 +125,7 @@ class Curl
     }
     public function put()
     {
+        $this->mothod = 'PUT';
         curl_setopt($this->curl, CURLOPT_URL, $this->fullUrl());
         curl_setopt($this->curl, CURLOPT_PUT, 1);
         if($this->file)
@@ -141,28 +141,29 @@ class Curl
     }
     public function delete()
     {
+        $this->mothod = 'DELETE';
         curl_setopt($this->curl, CURLOPT_URL, $this->fullUrl());
         curl_setopt($this->curl, CURLOPT_CUSTOMREQUEST, 'DELETE');
         return $this->format($this->handle($this->curl));
     }
     public function patch()
     {
+        $this->mothod = 'PATCH';
         curl_setopt($this->curl, CURLOPT_URL, $this->fullUrl());
         curl_setopt($this->curl, CURLOPT_CUSTOMREQUEST, 'PATCH');
         return $this->format($this->handle($this->curl));
     }
-
-    private function format(String $raw)
+    private function format($raw)
     {
         switch ($this->responseType)
         {
-            case 'json': return json_decode($response, true);
-            case 'xml' : return Muyu\XML::parse($response);
-            case 'jpg' : header('content-type: image/jpeg');return $response;
-            case 'png' : header('content-type: image/png');return $response;
-            case 'gif' : header('content-type: image/gif');return $response;
-            case 'bmp' : header('content-type: image/bmp');return $response;
-            default    : return $response;
+            case 'json': return json_decode($raw, true);
+            case 'xml' : return XML::parse($raw);
+            case 'jpg' : header('content-type: image/jpeg');return $raw;
+            case 'png' : header('content-type: image/png');return $raw;
+            case 'gif' : header('content-type: image/gif');return $raw;
+            case 'bmp' : header('content-type: image/bmp');return $raw;
+            default    : return $raw;
         }
     }
     private function handle($curl)
@@ -264,7 +265,7 @@ class Curl
         {
             case 'json': return json_decode($response,true);
             case 'xml' : return XML::parse($response);
-            case 'jpg' : header('content-type: image/jpeg');
+            case 'jpg' : header('content-type: image/jpeg');return $response;
             default    : return $response;
         }
     }

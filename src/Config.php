@@ -20,16 +20,16 @@ namespace Muyu;
  * tryInit(Array $config, Boolean $write = false)
  *      Try to load muyu.json, load $config in para instead if muyu.json doesn't existed.
  * 
- * set(String $key, $val)
+ * set($key, $val)
  *      Set a new key.
  * 
- * reset(String $key, $val)
+ * reset($key, $val)
  *      Set a key, override existed keys.
  * 
- * get(String $key)
+ * get($key)
  *      Get an existed key.
  * 
- * try(String $key, $default)
+ * try($key, $default)
  *      Try to get a key, return $default if the key doesn't existed.
  * 
  * dump()
@@ -72,18 +72,18 @@ class Config
             exit();
         }
     }
-    public function tryInit(Array $config, Boolean $write = false)
+    public function tryInit(Array $config, Boolean $write = null)
     {
         if(file_exists('muyu.json'))
             $this->init(json_decode(file_get_contents('muyu.json'), true));
         else
         {
             $this->init($config);
-            if
+            if($write)
                 file_put_contents('muyu.json', json_encode($config, JSON_PRETTY_PRINT));
         }
     }
-    public function set(String $key, $val)
+    public function set($key, $val)
     {
         $raw = $key;
         $config = &self::$config;
@@ -108,7 +108,7 @@ class Config
             }
         }
     }
-    public function reset(String $key, $val)
+    public function reset($key, $val)
     {
         $raw = $key;
         $config = &self::$config;
@@ -126,7 +126,7 @@ class Config
             }
         }
     }
-    public function get(String $key)
+    public function get($key)
     {
         $raw = $key;
         $config = &self::$config;
@@ -145,7 +145,7 @@ class Config
             }
         }
     }
-    public function try(String $key, $default)
+    public function try($key, $default)
     {
         $raw = $key;
         $config = &self::$config;
@@ -166,7 +166,7 @@ class Config
     }
     public function __invoke(...$paras)
     {
-        if(isset($paras[1]))
+        if(isset($paras[1]) || $paras[1] == null)
             return $this->try($paras[0], $paras[1]);
         else
             return $this->get($paras[0]);

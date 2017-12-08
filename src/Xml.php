@@ -3,7 +3,7 @@ namespace Muyu;
 
 class XML
 {
-    public static function parse(String $xml)
+    public static function parse($xml)
     {
         $data = simplexml_load_string($xml, 'SimpleXMLElement', LIBXML_NOCDATA | LIBXML_NOBLANKS);
         if (is_object($data) && get_class($data) === 'SimpleXMLElement')
@@ -12,10 +12,10 @@ class XML
     }
     public static function build(
         $data,
-        String $root = 'xml',
-        String $item = 'item',
-        String $attr = '',
-        String $id = 'id'
+        $root = 'xml',
+        $item = 'item',
+        $attr = '',
+        $id = 'id'
     ) {
         if (is_array($attr)) 
         {
@@ -31,7 +31,7 @@ class XML
         $xml  .= "</{$root}>";
         return $xml;
     }
-    public static function cdata(String $string)
+    public static function cdata($string)
     {
         return sprintf('<![CDATA[%s]]>', $string);
     }
@@ -44,7 +44,7 @@ class XML
                 $data[$index] = self::arrarval($value);
         return $data;
     }
-    private static function data2Xml(Array $data, String $item = 'item', String $id = 'id')
+    private static function data2Xml(Array $data, $item = 'item', $id = 'id')
     {
         $xml = $attr = '';
         foreach ($data as $key => $val) 

@@ -1,4 +1,4 @@
 <?php
 require('vendor/autoload.php');
-$curl = new Muyu\Curl('https://moodrain.cn/api/method');
-echo $curl->get();
+$curl = new Muyu\Curl();
+echo $curl->url('https://moodrain.cn')->get();

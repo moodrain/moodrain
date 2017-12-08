@@ -1,0 +1,12 @@
+<?php
+require_once('vendor/autoload.php');
+$optionFormat = 'f';
+
+$config = new Muyu\Config();
+$command = new Muyu\Command(
+    $config('command_host', 'https://moodrain.cn'),
+    $config('command_user', null),
+    $config('command_pass', null)
+);
+$option = getopt($optionFormat);
+$command->read($argv, $option);

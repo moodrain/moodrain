@@ -1,12 +1,23 @@
 <?php
 namespace Muyu;
+use \PDO;
+
 class Tool
 {
-    public static function getPDO($host,$db,$user,$pass)
+    private static $config;
+    public static function pdo($db = null, $errmode = PDO::ERRMODE_EXCEPTION , $type = null, $host = null, $user = null, $pass = null)
     {
-        return new PDO("mysql:host=$host;dbname=$db;charset=utf8",$user,$pass,[PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
+        if(!Self::$config)
+            Self::$config = new Config();
+        $config = Self::$config;
+        $type = $type ? $type : $config('db_type');
+        $host = $host ? $host : $config('db_host');
+        $user = $user ? $user : $config('db_user');
+        $pass = $pass ? $pass : $config('db_pass');
+        $db = $db ? $db : $config('db_name');
+        return new PDO("$type:host=$host;dbname=$db;charset=utf8", $user, $pass, [PDO::ATTR_ERRMODE => $errmode]);
     }
-    public static function getStrBetween($kw, $mark1, $mark2)
+    public static function strBetween($kw, $mark1, $mark2)
     {
         $st = stripos($kw, $mark1);
         $ed = stripos($kw, $mark2);
