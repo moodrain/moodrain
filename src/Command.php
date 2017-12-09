@@ -66,10 +66,21 @@ class Command
             'password' => $password,
         ])->receive('json')->post();
         $this->response($result, function($result) use ($override) {
-            if($override)
-                file_put_contents('muyu.json', $result['data']);
-            else if($this->readline('muyu.json already exists, override? (n)') == 'y')
-                file_put_contents('muyu.json', $result['data']);
+            if(isset($result['data']))
+            {
+                if($override)
+                    file_put_contents('muyu.json', $result['data']);
+                else
+                {
+                    if(file_exists('muyu.json'))
+                    {
+                        if($this->readline('muyu.json already exists, override? (n)') == 'y')
+                            file_put_contents('muyu.json', $result['data']);
+                    }
+                    else
+                        file_put_contents('muyu.json', $result['data']);
+                }
+            }
         });
     }
     private function uploadMuyuJson($filename = null)

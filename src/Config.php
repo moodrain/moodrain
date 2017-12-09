@@ -3,44 +3,44 @@ namespace Muyu;
 
 /**
  * Config class used for enabling simple usage of setting with muyu.json.
- * 
+ *
  * $config is the only one static property, so it is sync in whole app.
- * muyu.json should be placed in root dir so that Config load it when constructing.
- * or you can call init($config) to load your config.
+ * muyu.json should be placed in root dir so that this class load it when constructing.
+ * or you can call init($config) to load your config which should be Array.
  * all the keys is divided by '.'
- * 
+ *
  * the summarizes of methods:
- * 
+ *
  * init(Array $config)
  *      Manually load your config.
- * 
+ *
  * firstInit(Array $config)
  *      Create a new muyu.json and put down $config in JSON, then exit.
- * 
+ *
  * tryInit(Array $config, Boolean $write = false)
  *      Try to load muyu.json, load $config in para instead if muyu.json doesn't existed.
- * 
+ *
  * set($key, $val)
  *      Set a new key.
- * 
+ *
  * reset($key, $val)
  *      Set a key, override existed keys.
- * 
+ *
  * get($key)
  *      Get an existed key.
- * 
+ *
  * try($key, $default)
  *      Try to get a key, return $default if the key doesn't existed.
- * 
+ *
  * dump()
  *      var_dump() all config
- * 
+ *
  * __invoke($key)
  *      The same as method get.
- * 
+ *
  * __invoke($key, $default)
  *      The same as method try.
- * 
+ *
  */
 
 
@@ -118,10 +118,10 @@ class Config
         {
             if($count + 1 == $depth)
                 $config[$key] = $val;
-            else 
+            else
             {
                 if(!isset($config[$key]) || !is_array($config[$key]))
-                    $config[$key] = [];               
+                    $config[$key] = [];
                 $config = &$config[$key];
             }
         }
@@ -136,7 +136,7 @@ class Config
         {
             if($count + 1 == $depth && isset($config[$key]))
                 return $config[$key];
-            else 
+            else
             {
                 if(isset($config[$key]))
                     $config = &$config[$key];
@@ -155,7 +155,7 @@ class Config
         {
             if($count + 1 == $depth && isset($config[$key]))
                 return $config[$key];
-            else 
+            else
             {
                 if(isset($config[$key]))
                     $config = &$config[$key];
@@ -166,7 +166,7 @@ class Config
     }
     public function __invoke(...$paras)
     {
-        if(isset($paras[1]) || $paras[1] == null)
+        if(isset($paras[1]))
             return $this->try($paras[0], $paras[1]);
         else
             return $this->get($paras[0]);
