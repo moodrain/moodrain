@@ -85,6 +85,12 @@ class Command
     }
     private function uploadMuyuJson($filename = null)
     {
+        $muyuJson = file_get_contents('muyu.json');
+        if(json_decode($muyuJson) == null)
+        {
+            echo 'invalid json format' . PHP_EOL;
+            exit(1);
+        }
         $filename = $filename ?? $this->readline('muyuJsonName');
         $username = $this->username ?? $this->readline('username');
         $password = $this->password ?? $this->password('password');
@@ -92,7 +98,7 @@ class Command
         $result = (new Curl())->url($this->host . '/api/moodrain/uploadMuyuJson/' . $filename . ($override ? '/override' : ''))->data([
             'username' => $username,
             'password' => $password,
-            'data' => file_get_contents('muyu.json'),
+            'data' => $muyuJson,
         ])->receive('json')->post();
         $this->response($result, function($result) use ($filename, $username, $password){
             if($result['msg'] == 'file already exists')

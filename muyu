@@ -1,8 +1,11 @@
 <?php
 require_once('vendor/autoload.php');
 $optionFormat = 'f';
-
-$config = new Muyu\Config();
+try
+{
+    $config = new Muyu\Config();
+} catch (Exception $e) {echo $e->getMessage() . PHP_EOL;}
+$config = new Muyu\Config([]);
 $command = new Muyu\Command(
     $config('command_host', 'https://moodrain.cn'),
     $config('command_user', null),

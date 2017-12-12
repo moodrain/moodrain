@@ -8,9 +8,9 @@ class Tool
 
     public static function pdo($db = null, $errmode = PDO::ERRMODE_EXCEPTION , $type = null, $host = null, $user = null, $pass = null)
     {
-        if(!Self::$config)
-            Self::$config = new Config();
-        $config = Self::$config;
+        if(!self::$config)
+            self::$config = new Config();
+        $config = self::$config;
         $type = $type ? $type : $config('db_type');
         $host = $host ? $host : $config('db_host');
         $user = $user ? $user : $config('db_user');
@@ -22,14 +22,14 @@ class Tool
     {
         return json_encode(['code' => $code, 'msg' => $msg, 'data' => $data]);
     }
-    public static function strBetween($kw, $mark1, $mark2)
+    public static function strBetween($str, $kw1, $kw2)
     {
-        $st = stripos($kw, $mark1);
-        $ed = stripos($kw, $mark2);
-        if(!$st || !$ed || $$ed <= $st)
+        $st = stripos($str, $kw1);
+        $ed = stripos($str, $kw2);
+        if(!$st || !$ed || $ed <= $st)
             return '';
-        $kw = substr($kw, $st + strlen($mark1), $ed - $st - strlen($mark1));
-        return $kw;
+        $str = substr($str, $st + strlen($kw1), $ed - $st - strlen($kw1));
+        return $str;
     }
     public static function seed($seeder)
     {
@@ -73,6 +73,10 @@ class Tool
                 return $buildings[array_rand($buildings)] . '-' . $floor . $number;
             }
         }
+    }
+    public static function isSet($key, Array $array)
+    {
+        return array_key_exists($key, $array);
     }
     public static function ext($filename)
     {

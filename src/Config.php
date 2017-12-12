@@ -47,18 +47,25 @@ namespace Muyu;
 class Config
 {
     private static $config;
-    public function __construct()
+    public function __construct(Array $config = null)
     {
         if(!self::$config)
         {
-            if(file_exists('muyu.json'))
-                $this->init(json_decode(file_get_contents('muyu.json'), true));
+            if($config !== null)
+                $this->init($config);
             else
-                $this->init([]);
+            {
+                if(file_exists('muyu.json'))
+                    $this->init(json_decode(file_get_contents('muyu.json'), true));
+                else
+                    $this->init([]);
+            }
         }
     }
-    public function init(Array $config)
+    public function init(Array $config = null)
     {
+        if($config === null)
+            throw new \Exception('invalid config format');
         self::$config = $config;
     }
     public function firstInit(Array $config)
@@ -166,7 +173,7 @@ class Config
     }
     public function __invoke(...$paras)
     {
-        if(isset($paras[1]))
+        if(Tool::isSet(1,$paras))
             return $this->try($paras[0], $paras[1]);
         else
             return $this->get($paras[0]);

@@ -5,6 +5,7 @@ class Curl
 {
     private $curl;
     private $url;
+    private $path;
     private $query;
     private $mothod;
     private $responseType;
@@ -32,7 +33,12 @@ class Curl
             return $this;
         }
         else
-            return $this->url . ( $this->query ? '?' . http_build_query($this->query) : '');
+            return $this->url . $this->path . ( $this->query ? '?' . http_build_query($this->query) : '');
+    }
+    public function path($path)
+    {
+        $this->path = $path;
+        return $this;
     }
     public function query(Array $query)
     {
@@ -42,7 +48,12 @@ class Curl
     public function receive($responseType)
     {
         if(!in_array($responseType, ['text', 'json', 'xml', 'jpg', 'png', 'gif', 'bmp']))
-            throw new \Exception ('unsupported responseType');
+        {
+//            throw new \Exception ('unsupported responseType');
+            echo 'unsupported responseType';
+            exit(1);
+        }
+
         $this->responseType = $responseType;
         return $this;
     }
@@ -97,17 +108,27 @@ class Curl
         else
             return $this->result['header'];
     }
+    public function status()
+    {
+        return $this->result['header']['Status'];
+    }
     public function content()
     {
         return $this->result['content'];
     } 
-    public function get()
+    public function get($returnResult = true)
     {
         $this->mothod = 'GET';
         curl_setopt($this->curl, CURLOPT_URL, $this->fullUrl());
-        return $this->format($this->handle($this->curl));
+        if($returnResult)
+            return $this->format($this->handle($this->curl));
+        else
+        {
+            $this->handle($this->curl);
+            return $this;
+        }
     }
-    public function post()
+    public function post($returnResult = true)
     {
         $this->mothod = 'POST';
         curl_setopt($this->curl, CURLOPT_URL, $this->fullUrl());
@@ -121,9 +142,15 @@ class Curl
             curl_setopt($this->curl, CURLOPT_INFILE, $stream);
             curl_setopt($this->curl, CURLOPT_INFILESIZE, $size);
         }
-        return $this->format($this->handle($this->curl));
+        if($returnResult)
+            return $this->format($this->handle($this->curl));
+        else
+        {
+            $this->handle($this->curl);
+            return $this;
+        }
     }
-    public function put()
+    public function put($returnResult = true)
     {
         $this->mothod = 'PUT';
         curl_setopt($this->curl, CURLOPT_URL, $this->fullUrl());
@@ -137,34 +164,56 @@ class Curl
         }
         if($this->data)
             curl_setopt($this->curl, CURLOPT_POSTFIELDS, $this->data);
-        return $this->format($this->handle($this->curl));
+        if($returnResult)
+            return $this->format($this->handle($this->curl));
+        else
+        {
+            $this->handle($this->curl);
+            return $this;
+        }
     }
-    public function delete()
+    public function delete($returnResult = true)
     {
         $this->mothod = 'DELETE';
         curl_setopt($this->curl, CURLOPT_URL, $this->fullUrl());
         curl_setopt($this->curl, CURLOPT_CUSTOMREQUEST, 'DELETE');
-        return $this->format($this->handle($this->curl));
+        if($returnResult)
+            return $this->format($this->handle($this->curl));
+        else
+        {
+            $this->handle($this->curl);
+            return $this;
+        }
     }
-    public function patch()
+    public function patch($returnResult = true)
     {
         $this->mothod = 'PATCH';
         curl_setopt($this->curl, CURLOPT_URL, $this->fullUrl());
         curl_setopt($this->curl, CURLOPT_CUSTOMREQUEST, 'PATCH');
-        return $this->format($this->handle($this->curl));
+        if($returnResult)
+            return $this->format($this->handle($this->curl));
+        else
+        {
+            $this->handle($this->curl);
+            return $this;
+        }
     }
     private function format($raw)
     {
-        switch ($this->responseType)
+        try
         {
-            case 'json': return json_decode($raw, true);
-            case 'xml' : return XML::parse($raw);
-            case 'jpg' : header('content-type: image/jpeg');return $raw;
-            case 'png' : header('content-type: image/png');return $raw;
-            case 'gif' : header('content-type: image/gif');return $raw;
-            case 'bmp' : header('content-type: image/bmp');return $raw;
-            default    : return $raw;
-        }
+            switch ($this->responseType)
+            {
+                case 'json': return json_decode($raw, true);
+                case 'xml' : return XML::parse($raw);
+                case 'jpg' : header('content-type: image/jpeg');return $raw;
+                case 'png' : header('content-type: image/png');return $raw;
+                case 'gif' : header('content-type: image/gif');return $raw;
+                case 'bmp' : header('content-type: image/bmp');return $raw;
+                default    : return $raw;
+            }
+        } catch (\Exception $e) {return $e->getMessage();}
+
     }
     private function handle($curl)
     {
