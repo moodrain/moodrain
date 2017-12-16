@@ -4,12 +4,15 @@ $optionFormat = 'f';
 try
 {
     $config = new Muyu\Config();
-} catch (Exception $e) {echo $e->getMessage() . PHP_EOL;}
-$config = new Muyu\Config([]);
+} catch (Exception $e)
+{
+    echo $e->getMessage() . PHP_EOL;
+    $config = new Muyu\Config([]);
+}
 $command = new Muyu\Command(
-    $config('command_host', 'https://moodrain.cn'),
-    $config('command_user', null),
-    $config('command_pass', null)
+    $config('command.host', 'https://moodrain.cn'),
+    $config('command.user', null),
+    $config('command.pass', null)
 );
 $option = getopt($optionFormat);
 $command->read($argv, $option);

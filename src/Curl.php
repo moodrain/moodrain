@@ -62,9 +62,9 @@ class Curl
         $this->data = $data;
         return $this;
     }
-    public function data(Array $data)
+    public function data($data)
     {
-        $this->data = http_build_query($data);
+        $this->data = is_array($data) ? http_build_query($data) : $data;
         return $this;
     }
     public function file($file)
@@ -225,30 +225,42 @@ class Curl
         $content = '';
         $endHeader = false;
         $count = 0;
+        $continue = false;
         foreach($response as $row)
         {
             $count++;
             if(!$endHeader)
             {
                 $header = explode(': ', $row);
-                if(count($header) == 1 && strlen($row) != 0)
+                $key = $header[0];
+                $val = $header[1] ?? null;
+                if($val == null && strlen($row) != 0)
                 {
-                    $headers['Status'] = $header[0];
+                    if($key == 'HTTP/1.1 100 Continue')
+                        $continue = true;
+                    $headers['Status'] = $key;
                     continue;
                 }
-                if(strlen($row))
-                {
-                    if($header[0] == 'Set-Cookie')
-                        $headers[$header[0]][] = $header[1];
-                    else
-                        $headers[$header[0]] = $header[1];
-                }
+                if($continue)
+                    $continue = false;
                 else
-                    $endHeader = true;
+                {
+                    if(strlen($row))
+                    {
+                        if($key == 'Set-Cookie')
+                            $headers['Set-Cookie'][] = $val;
+                        else
+                            $headers[$key] = $val;
+                    }
+                    else
+                        $endHeader = true;
+                }
             }
             else
                 $content .= $row . ($count == count($response) ? '' : "\r\n");
         }
+        if(!isset($headers['Status']))
+            return null;
         $this->result['header'] = $headers;
         $this->result['content'] = $content;
         return $this->content();
@@ -257,65 +269,67 @@ class Curl
     {
         curl_close($this->curl);
     }
-    public function do($url, $type=null, $res=null, $data=null, $header=null, $useCookie=null, $cookie=null)
-    {
-        $curl = curl_init();
-        curl_setopt($curl,CURLOPT_URL,$url);
-        curl_setopt($curl,CURLOPT_RETURNTRANSFER,1);
-        curl_setopt($curl,CURLOPT_SSL_VERIFYPEER,0);
-        if($type == 'post')
-        {
-            curl_setopt($curl,CURLOPT_POST,1);
-            if(is_string($data))
-                curl_setopt($curl,CURLOPT_POSTFIELDS,$data);
-            else
-            curl_setopt($curl,CURLOPT_POSTFIELDS,http_build_query($data));
-        }
-        else if($type == 'put')
-        {
-            curl_setopt($curl,CURLOPT_PUT,1);
-            curl_setopt($curl,CURLOPT_INFILE, $data['content']);
-            curl_setopt($curl,CURLOPT_INFILESIZE ,$data['size']);
-        }
-        else if($type == 'delete')
-        {
-            curl_setopt($curl, CURLOPT_CUSTOMREQUEST, 'DELETE');
-        }
-        if($header)
-        {
-            $headerData = [];
-            foreach($header as $key => $value)
-                array_push($headerData,$key.': ' . $value);
-            curl_setopt($curl,CURLOPT_HTTPHEADER,$headerData);
-        }
-        if($useCookie == 'get')
-        {
-            curl_setopt($curl,CURLOPT_HEADER,1);
-            $content = curl_exec($curl);
-            curl_close($curl);
-            preg_match('/Set-Cookie:(.*);/iU',$content,$str);
-            $cookie = $str[1];
-            $content = explode("\r\n", $content);
-            $body = $content[count($content)-1];
-            return $res == 'json' ? [$cookie,json_encode($body)] : [$cookie,$body];
-        }
-        else if($useCookie == 'with')
-            curl_setopt($curl,CURLOPT_COOKIE,$cookie);
-        if($res == 'header')
-        {
-            curl_setopt($curl,CURLOPT_HEADER,1);
-            $content = curl_exec($curl);
-            curl_close($curl);
-            return explode("\r\n", $content)[0];
-        }
-        $response = curl_exec($curl);
-        curl_close($curl);
-        switch ($res)
-        {
-            case 'json': return json_decode($response,true);
-            case 'xml' : return XML::parse($response);
-            case 'jpg' : header('content-type: image/jpeg');return $response;
-            default    : return $response;
-        }
-    }
 }
+
+
+//public function do($url, $type=null, $res=null, $data=null, $header=null, $useCookie=null, $cookie=null)
+//    {
+//        $curl = curl_init();
+//        curl_setopt($curl,CURLOPT_URL,$url);
+//        curl_setopt($curl,CURLOPT_RETURNTRANSFER,1);
+//        curl_setopt($curl,CURLOPT_SSL_VERIFYPEER,0);
+//        if($type == 'post')
+//        {
+//            curl_setopt($curl,CURLOPT_POST,1);
+//            if(is_string($data))
+//                curl_setopt($curl,CURLOPT_POSTFIELDS,$data);
+//            else
+//            curl_setopt($curl,CURLOPT_POSTFIELDS,http_build_query($data));
+//        }
+//        else if($type == 'put')
+//        {
+//            curl_setopt($curl,CURLOPT_PUT,1);
+//            curl_setopt($curl,CURLOPT_INFILE, $data['content']);
+//            curl_setopt($curl,CURLOPT_INFILESIZE ,$data['size']);
+//        }
+//        else if($type == 'delete')
+//        {
+//            curl_setopt($curl, CURLOPT_CUSTOMREQUEST, 'DELETE');
+//        }
+//        if($header)
+//        {
+//            $headerData = [];
+//            foreach($header as $key => $value)
+//                array_push($headerData,$key.': ' . $value);
+//            curl_setopt($curl,CURLOPT_HTTPHEADER,$headerData);
+//        }
+//        if($useCookie == 'get')
+//        {
+//            curl_setopt($curl,CURLOPT_HEADER,1);
+//            $content = curl_exec($curl);
+//            curl_close($curl);
+//            preg_match('/Set-Cookie:(.*);/iU',$content,$str);
+//            $cookie = $str[1];
+//            $content = explode("\r\n", $content);
+//            $body = $content[count($content)-1];
+//            return $res == 'json' ? [$cookie,json_encode($body)] : [$cookie,$body];
+//        }
+//        else if($useCookie == 'with')
+//            curl_setopt($curl,CURLOPT_COOKIE,$cookie);
+//        if($res == 'header')
+//        {
+//            curl_setopt($curl,CURLOPT_HEADER,1);
+//            $content = curl_exec($curl);
+//            curl_close($curl);
+//            return explode("\r\n", $content)[0];
+//        }
+//        $response = curl_exec($curl);
+//        curl_close($curl);
+//        switch ($res)
+//        {
+//            case 'json': return json_decode($response,true);
+//            case 'xml' : return XML::parse($response);
+//            case 'jpg' : header('content-type: image/jpeg');return $response;
+//            default    : return $response;
+//        }
+//  }

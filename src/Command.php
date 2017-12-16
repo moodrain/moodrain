@@ -27,21 +27,25 @@ class Command
     }
     private function command4OneParam(Array $argv)
     {
-        switch($argv[0])
+        $command = strtolower($argv[0]);
+        switch($command)
         {
-            case 'listMuyuJson' : $this->listMuyuJson();break;
-            case 'downloadMuyuJson' : $this->downloadMuyuJson();break;
-            case 'uploadMuyuJson' : $this->uploadMuyuJson();break;
-            case 'removeMuyuJson' : $this->removeMuyuJson();break;
+            case 'listmuyujson' : $this->listMuyuJson();break;
+            case 'downloadmuyujson' : $this->downloadMuyuJson();break;
+            case 'uploadmuyujson' : $this->uploadMuyuJson();break;
+            case 'removemuyujson' : $this->removeMuyuJson();break;
+            default : echo 'unknown command';
         }
     }
     private function command4TwoParam(Array $argv)
     {
-        switch($argv[0])
+        $command = strtolower($argv[0]);
+        switch($command)
         {
-            case 'downloadMuyuJson' : $this->downloadMuyuJson($argv[1]);break;
-            case 'uploadMuyuJson' : $this->uploadMuyuJson($argv[1]);break;
-            case 'removeMuyuJson' : $this->removeMuyuJson($argv[1]);break;
+            case 'downloadmuyujson' : $this->downloadMuyuJson($argv[1]);break;
+            case 'uploadmuyujson' : $this->uploadMuyuJson($argv[1]);break;
+            case 'removemuyujson' : $this->removeMuyuJson($argv[1]);break;
+            default : echo 'unknown command';
         }
     }
 

@@ -6,17 +6,17 @@ class Tool
 {
     private static $config;
 
-    public static function pdo($db = null, $errmode = PDO::ERRMODE_EXCEPTION , $type = null, $host = null, $user = null, $pass = null)
+    public static function pdo(Array $configArr = null, $errMode = PDO::ERRMODE_EXCEPTION)
     {
         if(!self::$config)
             self::$config = new Config();
-        $config = self::$config;
-        $type = $type ? $type : $config('db_type');
-        $host = $host ? $host : $config('db_host');
-        $user = $user ? $user : $config('db_user');
-        $pass = $pass ? $pass : $config('db_pass');
-        $db = $db ? $db : $config('db_name');
-        return new PDO("$type:host=$host;dbname=$db;charset=utf8", $user, $pass, [PDO::ATTR_ERRMODE => $errmode]);
+        $config  = self::$config;
+        $host = $configArr['host'] ?? $config('database.host');
+        $type = $configArr['type'] ?? $config('database.type');
+        $db = $configArr['db'] ?? $config('database.db');
+        $user = $configArr['user'] ?? $config('database.user');
+        $pass = $configArr['pass'] ?? $config('database.pass');
+        return new PDO("$type:host=$host;dbname=$db;charset=utf8", $user, $pass, [PDO::ATTR_ERRMODE => $errMode]);
     }
     public static function res($code, $msg, $data)
     {

@@ -3,14 +3,14 @@ namespace Muyu;
 
 class OSS
 {
-    private $accessKey = '';
-    private $accessSecret = '';
-    private $address = '';
-    private $domain = '';
-    private $bucketName = '';
-    private $endPoint = '';
-    private $policy = '';
-    private $callback = '';
+    private $accessKeyId;
+    private $accessKeySecret;
+    private $address;
+    private $domain;
+    private $bucketName;
+    private $endPoint;
+    private $policy;
+    private $callback;
     private $expire;
     private $cors;
 
@@ -18,11 +18,30 @@ class OSS
     private $pubKeyUrl = '';
     private $isVerified = false;
 
-    public function __construct()
+    public function __construct(Array $config = null)
     {
-        $config = new Config();
-        foreach($config('oss') as $key => $val)
-            $this->$key = $val;
+        if($config)
+        {
+            foreach($config as $key => $val)
+                $this->$key = $val;
+        }
+        else
+        {
+            $config = new Config();
+            foreach($config('oss', []) as $key => $val)
+                $this->$key = $val;
+        }
+    }
+    public function init(Array $config)
+    {
+        $this->address = $config['address'] ?? $this->address;
+        $this->domain = $config['domain'] ?? $this->domain;
+        $this->bucketName = $config['bucketName'] ?? $this->bucketName;
+        $this->endPoint = $config['endPoint'] ?? $this->endPoint;
+        $this->policy = $config['policy'] ?? $this->policy;
+        $this->callback = $config['callback'] ?? $this->callback;
+        $this->expire = $config['expire'] ?? $this->expire;
+        $this->cors = $config['cors'] ?? $this->cors;
     }
     public function policy($dir, $callback, $data = null)
     {
@@ -44,7 +63,7 @@ class OSS
         $policy = json_encode($arr);
         $base64_policy = base64_encode($policy);
         $string_to_sign = $base64_policy;
-        $signature = base64_encode(hash_hmac('sha1', $string_to_sign, $this->accessSecret, true));
+        $signature = base64_encode(hash_hmac('sha1', $string_to_sign, $this->accessKeySecret, true));
         $callback_param = array
         (
             'callbackUrl' =>  $callback,
@@ -54,7 +73,7 @@ class OSS
         $callback_string = json_encode($callback_param);
         $base64_callback_body = base64_encode($callback_string);
         $response = array();
-        $response['accessKey'] = $this->accessKey;
+        $response['accessKeyId'] = $this->accessKeyId;
         $response['address'] = $this->address;
         $response['policy'] = $base64_policy;
         $response['signature'] = $signature;
@@ -133,8 +152,8 @@ class OSS
     public function sign($method, $resource, $contentType = '', $contentMd5 = '')
     {
         $method = strtoupper($method);
-        $signature = base64_encode(hash_hmac('sha1', $method . "\n" . $contentMd5 . "\n" . $contentType . "\n" . Tool::gmt() . "\n" . $resource, $this->accessSecret, true));
-        $authorization = 'OSS ' . $this->accessKey . ':' . $signature;
+        $signature = base64_encode(hash_hmac('sha1', $method . "\n" . $contentMd5 . "\n" . $contentType . "\n" . Tool::gmt() . "\n" . $resource, $this->accessKeySecret, true));
+        $authorization = 'OSS ' . $this->accessKeyId . ':' . $signature;
         return $authorization;
     }
     public function get($file, $responseType = 'text', $query = '')
@@ -152,33 +171,24 @@ class OSS
             $contentType = $contentType ? $contentType : 'image/' . Tool::ext($from);
         $resource = '/' . $this->bucketName . '/' . $to;
         $url = $this->domain . '/' . $to;
-        $data = fopen($from, 'r');
-        $size = filesize($from);
         $contentMd5 = base64_encode(md5_file($from, true));
-        $curl =  new Curl();
-        $curl->url($url)->data([
-            'content' => $data,
-            'size' => $size,
-        ])->header([
+        $rs = (new Curl())->url($url)->file($from)->header([
             'Date' => Tool::gmt(),
             'Authorization' => $this->sign('put', $resource, $contentType, $contentMd5),
-            'Content-Length' => $size,
+            'Content-Length' => filesize($from),
             'Content-Type' => $contentType,
             'Content-MD5' => $contentMd5,
-        ])->put();
-        $rs = $curl->status();
+        ])->put(false)->status();
         return $rs == 'HTTP/1.1 100 Continue' || $rs == 'HTTP/1.1 200 OK' ? true : $rs;
     }
     public function del($file)
     {
         $resource = '/' . $this->bucketName . '/' . $file;
         $url = $this->domain . '/' . $file;
-        $curl = new Curl();
-        $curl->url($url)->header([
+        $rs = (new Curl())->url($url)->header([
             'Date' => Tool::gmt(),
             'Authorization' => $this->sign('delete', $resource),
         ])->delete();
-        $rs = $curl->status();
         return $rs == 'HTTP/1.1 204 No Content' ? true : $rs;
     }
 }
