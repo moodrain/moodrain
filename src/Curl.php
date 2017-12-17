@@ -8,10 +8,11 @@ class Curl
     private $path;
     private $query;
     private $mothod;
-    private $responseType;
     private $data;
     private $file;
+    private $contentType;
     private $result;
+    private $responseType;
 
     public function __construct($url = null)
     {
@@ -47,19 +48,25 @@ class Curl
     }
     public function receive($responseType)
     {
-        if(!in_array($responseType, ['text', 'json', 'xml', 'jpg', 'png', 'gif', 'bmp']))
+        switch($responseType)
         {
-//            throw new \Exception ('unsupported responseType');
-            echo 'unsupported responseType';
-            exit(1);
+            case 'text' : $this->responseType = 'text/plain';break;
+            case 'html' : $this->responseType = 'text/html';break;
+            case 'json' : $this->responseType = 'application/json';break;
+            case 'xml'  : $this->responseType = 'application/xml';break;
+            case 'jpg'  : $this->responseType = 'image/jpeg';break;
+            case 'png'  : $this->responseType = 'image/png';break;
+            case 'gif'  : $this->responseType = 'image/gif';break;
+            case 'bmp'  : $this->responseType = 'image/bmp';break;
+            case 'webp' : $this->responseType = 'image/webp';break;
+            default     : $this->responseType = $responseType;
         }
-
-        $this->responseType = $responseType;
         return $this;
     }
-    public function stringData($data)
+    public function contentType($contentType)
     {
-        $this->data = $data;
+        $this->contentType = $contentType;
+        $this->header(['Content-Type' => $contentType]);
         return $this;
     }
     public function data($data)
@@ -115,7 +122,7 @@ class Curl
     public function content()
     {
         return $this->result['content'];
-    } 
+    }
     public function get($returnResult = true)
     {
         $this->mothod = 'GET';
@@ -200,20 +207,20 @@ class Curl
     }
     private function format($raw)
     {
-        try
+        header('Content-Type: ' . $this->responseType ?? $this->header()['Content-Type'] ?? 'text/plain');
+        switch ($this->responseType)
         {
-            switch ($this->responseType)
-            {
-                case 'json': return json_decode($raw, true);
-                case 'xml' : return XML::parse($raw);
-                case 'jpg' : header('content-type: image/jpeg');return $raw;
-                case 'png' : header('content-type: image/png');return $raw;
-                case 'gif' : header('content-type: image/gif');return $raw;
-                case 'bmp' : header('content-type: image/bmp');return $raw;
-                default    : return $raw;
-            }
-        } catch (\Exception $e) {return $e->getMessage();}
-
+            case 'application/json': return json_decode($raw, true);
+            case 'application/xml' : return XML::parse($raw);
+            case 'text/plain'      :
+            case 'text/html'       :
+            case 'image/jpeg'      :
+            case 'image/png'       :
+            case 'image/gif'       :
+            case 'image/bmp'       :
+            case 'image/webp'      :
+            default                : return $raw;
+        }
     }
     private function handle($curl)
     {

@@ -2,7 +2,7 @@
 namespace Muyu;
 use PHPMailer\PHPMailer\PHPMailer;
 
-class SMTP
+class Mail
 {
     private $host;
     private $port;
@@ -27,7 +27,7 @@ class SMTP
         else
         {
             $config = new Config();
-            foreach($config('smtp', []) as $key => $val)
+            foreach($config('mail', []) as $key => $val)
                 $this->$key = $val;
         }
     }

@@ -15,5 +15,5 @@ $curl->close();
 $pdo = Tool::pdo($config('database.demo'));                                                                         // save in database by PDO
 (new OSS())->put("{$ups[0]}.html", "moodrain-demo/crawler.html", "text/html;charset=UTF-8");           // save in Ali OSS
 $mailHtml = '<a href="' . $config('oss.address') . '/moodrain-demo/crawler.html">to see the result</a>';
-(new SMTP())->subject('Crawler Complete')->content($mailHtml)->to('muyu@muyu.com')->send();                  // notify by SMTP
+(new Mail())->subject('Crawler Complete')->content($mailHtml)->to('muyu@muyu.com')->send();                  // notify by SMTP
 (new SMS())->init($config('sms.demo'))->data(['msg' => 'crawler complete!'])->to('13800138000')->send();    // notify by Ali SMS
