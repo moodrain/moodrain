@@ -167,19 +167,34 @@ class OSS
     }
     public function put($from, $to, $contentType = null)
     {
-        if(in_array(Tool::ext($from), ['jpg', 'jpeg', 'png', 'gif', 'bmp']))
-            $contentType = $contentType ? $contentType : 'image/' . Tool::ext($from);
         $resource = '/' . $this->bucketName . '/' . $to;
         $url = $this->domain . '/' . $to;
         $contentMd5 = base64_encode(md5_file($from, true));
-        $rs = (new Curl())->url($url)->file($from)->header([
+        if(!$contentType)
+        {
+            switch (Tool::ext($from))
+            {
+                case 'txt'  : $contentType = 'text/plain';break;
+                case 'html' : $contentType = 'text/html';break;
+                case 'xml'  : $contentType = 'application/xml';break;
+                case 'json' : $contentType = 'application/json';break;
+                case 'zip'  : $contentType = 'application/zip';break;
+                case 'jpg'  : $contentType = 'image/jpeg';break;
+                case 'png'  : $contentType = 'image/png';break;
+                case 'gif'  : $contentType = 'image/gif';break;
+                case 'bmp'  : $contentType = 'image/bmp';break;
+                case 'webp' : $contentType = 'image/webp';break;
+                default     : $contentType = null;
+            }
+        }
+        $rs = (new Curl())->url($url)->file($from)->contentType($contentType)->header([
             'Date' => Tool::gmt(),
             'Authorization' => $this->sign('put', $resource, $contentType, $contentMd5),
             'Content-Length' => filesize($from),
             'Content-Type' => $contentType,
             'Content-MD5' => $contentMd5,
-        ])->put(false)->status();
-        return $rs == 'HTTP/1.1 100 Continue' || $rs == 'HTTP/1.1 200 OK' ? true : $rs;
+         ])->put(false);
+        return $rs->status() == 'HTTP/1.1 200 OK' ? true : $rs->content();
     }
     public function del($file)
     {
@@ -188,7 +203,7 @@ class OSS
         $rs = (new Curl())->url($url)->header([
             'Date' => Tool::gmt(),
             'Authorization' => $this->sign('delete', $resource),
-        ])->delete();
-        return $rs == 'HTTP/1.1 204 No Content' ? true : $rs;
+        ])->delete(false);
+        return $rs->status() == 'HTTP/1.1 204 No Content' ? true : $rs->content();
     }
 }
