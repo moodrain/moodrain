@@ -63,11 +63,17 @@ class Curl
         }
         return $this;
     }
-    public function contentType($contentType)
+    public function contentType($contentType = null)
     {
-        $this->contentType = $contentType;
-        $this->header(['Content-Type' => $contentType]);
-        return $this;
+        if($contentType)
+        {
+            $this->contentType = $contentType;
+            $this->header(['Content-Type' => $contentType]);
+            return $this;
+        }
+        else
+            return $this->contentType;
+
     }
     public function data($data)
     {
@@ -207,7 +213,9 @@ class Curl
     }
     private function format($raw)
     {
-        header('Content-Type: ' . $this->responseType ?? $this->header()['Content-Type'] ?? 'text/plain');
+        $contentType = $this->contentType ?? $this->contentType() ?? null;
+        if($contentType)
+            header('Content-Type: ' . $contentType);
         switch ($this->responseType)
         {
             case 'application/json': return json_decode($raw, true);
