@@ -18,9 +18,57 @@ class Tool
         $pass = $configArr['pass'] ?? $config('database.pass');
         return new PDO("$type:host=$host;dbname=$db;charset=utf8", $user, $pass, [PDO::ATTR_ERRMODE => $errMode]);
     }
-    public static function res($code, $msg, $data)
+    public static function log($log)
     {
+        $file = fopen('log.txt', 'a');
+        if(!is_string($log))
+            $log = json_encode($log, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+        fwrite($file, $log . PHP_EOL);
+    }
+    public static function res($code, $msg, $data, $status = null)
+    {
+        $statusHeader = 'HTTP/1.1 ';
+        switch($status)
+        {
+            case 200 : $statusHeader .= '200 OK';break;
+            case 301 : $statusHeader .= '301 Moved Permanently';break;
+            case 302 : $statusHeader .= '302 Found';break;
+            case 307 : $statusHeader .= '307 Temporary Redirect';break;
+            case 308 : $statusHeader .= '308 Permanent Redirect';break;
+            case 400 : $statusHeader .= '400 Bad Request';break;
+            case 401 : $statusHeader .= '401 Unauthorized';break;
+            case 403 : $statusHeader .= '403 Forbidden';break;
+            case 404 : $statusHeader .= '404 Not Found';break;
+            case 500 : $statusHeader .= '500 Internal Server Error';break;
+            default  : $statusHeader .= '200 OK';
+        }
+        header($statusHeader);
+        header('Content-Type: application/json');
         return json_encode(['code' => $code, 'msg' => $msg, 'data' => $data]);
+    }
+    public static function abc123($in, $up = false)
+    {
+        $ascii = ord($in);
+        switch($ascii)
+        {
+            case ($ascii >= 65 && $ascii <= 90) : return $ascii - 64;
+            case ($ascii >= 97 && $ascii <= 122) : return $ascii - 96;
+            case ($in >= 1 && $in <= 26 && $up) : return chr($in + 64);
+            case ($in >= 1 && $in <= 26 && !$up) : return chr($in + 96);
+            default : return null;
+        }
+    }
+    public static function deep($arr)
+    {
+        $deep = 1;
+        if(!is_array($arr))
+            return 0;
+        while(is_array(current($arr)))
+        {
+            $deep++;
+            $arr = current($arr);
+        }
+        return $deep;
     }
     public static function strBetween($str, $kw1, $kw2)
     {
@@ -80,7 +128,7 @@ class Tool
     }
     public static function ext($filename)
     {
-        return explode('.', $filename)[1];
+        return explode('.', $filename)[1] ?? null;
     }
     public static function gmt()
     {

@@ -14,6 +14,8 @@ class OSS
     private $expire;
     private $cors;
 
+    private $prefix;
+
     private $authorization = '';
     private $pubKeyUrl = '';
     private $isVerified = false;
@@ -156,19 +158,30 @@ class OSS
         $authorization = 'OSS ' . $this->accessKeyId . ':' . $signature;
         return $authorization;
     }
-    public function get($file, $responseType = 'text', $query = '')
+
+    public function prefix($prefix = null)
     {
-        $resource = '/' . $this->bucketName . '/' . $file . $query;
-        $url = $this->domain . '/' . $file . $query;
-        return (new Curl())->url($url)->receive($responseType)->header([
+        if(!$prefix)
+            return $this->prefix;
+        else
+        {
+            $this->prefix = $prefix;
+            return $this;
+        }
+    }
+    public function get($file, $receive = 'text', $query = '')
+    {
+        $resource = '/' . $this->bucketName . '/' . ($this->prefix ? $this->prefix . '/' : '') . $file . $query;
+        $url = $this->domain . '/' . ($this->prefix ? $this->prefix . '/' : '') . $file . $query;
+        return (new Curl())->url($url)->receive($receive)->header([
             'Date' => Tool::gmt(),
             'Authorization' => $this->sign('get', $resource),
         ])->get();
     }
     public function put($from, $to, $contentType = null)
     {
-        $resource = '/' . $this->bucketName . '/' . $to;
-        $url = $this->domain . '/' . $to;
+        $resource = '/' . $this->bucketName . '/' . ($this->prefix ? $this->prefix . '/' : '') .  $to;
+        $url = $this->domain . '/' . ($this->prefix ? $this->prefix . '/' : '') . $to;
         $contentMd5 = base64_encode(md5_file($from, true));
         if(!$contentType)
         {
@@ -184,7 +197,7 @@ class OSS
                 case 'gif'  : $contentType = 'image/gif';break;
                 case 'bmp'  : $contentType = 'image/bmp';break;
                 case 'webp' : $contentType = 'image/webp';break;
-                default     : $contentType = null;
+                default     : $contentType = 'application/octet-stream';
             }
         }
         $rs = (new Curl())->url($url)->file($from)->contentType($contentType)->header([
@@ -198,12 +211,53 @@ class OSS
     }
     public function del($file)
     {
-        $resource = '/' . $this->bucketName . '/' . $file;
-        $url = $this->domain . '/' . $file;
+        $resource = '/' . $this->bucketName . '/' . ($this->prefix ? $this->prefix . '/' : '') . $file;
+        $url = $this->domain . '/' . ($this->prefix ? $this->prefix . '/' : '') . $file;
         $rs = (new Curl())->url($url)->header([
             'Date' => Tool::gmt(),
             'Authorization' => $this->sign('delete', $resource),
         ])->delete(false);
         return $rs->status() == 'HTTP/1.1 204 No Content' ? true : $rs->content();
+    }
+    public function list($prefix = null)
+    {
+        $resource = '/' . $this->bucketName . '/';
+        $url = $this->domain;
+        $prefix = ($prefix && $prefix != '/' ? $prefix : null) ?? $this->prefix;
+        $maxKeys = 1000;
+        $curl = new Curl();
+        $curl->url($url)->receive('xml')->header([
+            'Date' => Tool::gmt(),
+            'Authorization' => $this->sign('get', $resource),
+        ])->query([
+            'prefix' => $prefix,
+            'max-keys' => $maxKeys,
+        ]);
+        $finish = false;
+        $trials = 10;
+        $list = [];
+        while(!($finish || $trials <= 0))
+        {
+            $result = $curl->get();
+            if(!$result)
+            {
+                $trials--;
+                if($trials == 0)
+                    return null;
+                continue;
+            }
+            if($result['IsTruncated'] == 'true')
+                $curl->query([
+                    'prefix' => $prefix,
+                    'max-keys' => $maxKeys,
+                    'marker' => $result['NextMarker'],
+                ]);
+            else if($result['IsTruncated'] == 'false')
+                $finish = true;
+            if(!isset($result['Contents']))
+                return [];
+            $list = array_merge($list, $result['Contents']);
+        }
+        return $list;
     }
 }

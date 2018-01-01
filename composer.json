@@ -10,7 +10,9 @@
     ],
     "license": "MIT",
     "require": {
-        "phpmailer/phpmailer": "^6.0"
+        "phpmailer/phpmailer": "^6.0",
+        "php-imap/php-imap": "^3.0",
+        "box/spout": "^2.7"
     },
     "autoload": {
         "psr-4": {"Muyu\\": "src/"}

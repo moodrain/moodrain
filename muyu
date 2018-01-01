@@ -9,10 +9,9 @@ try
     echo $e->getMessage() . PHP_EOL;
     $config = new Muyu\Config([]);
 }
-$command = new Muyu\Command(
-    $config('command.host', 'https://moodrain.cn'),
-    $config('command.user', null),
-    $config('command.pass', null)
-);
+$host = $config('command.host', 'https://moodrain.cn');
+$user = $config('command.user', null);
+$pass = $config('command.pass', null) ? base64_decode($config('command.pass')) : null;
+$command = new Muyu\Command($host, $user, $pass);
 $option = getopt($optionFormat);
-$command->read($argv, $option);
+@$command->read($argv, $option);

@@ -2,7 +2,7 @@
 namespace Muyu;
 use PHPMailer\PHPMailer\PHPMailer;
 
-class Mail
+class SMTP
 {
     private $host;
     private $port;
@@ -15,7 +15,10 @@ class Mail
     private $to = [];
     private $replyTo = [];
     private $subject;
-    private $content;
+    private $html;
+    private $text;
+
+    private $mailer;
 
     public function __construct(Array $config = null)
     {
@@ -69,9 +72,14 @@ class Mail
         $this->subject = $subject;
         return $this;
     }
-    public function content($html)
+    public function html($html)
     {
-        $this->content = $html;
+        $this->html = $html;
+        return $this;
+    }
+    public function text($text)
+    {
+        $this->text = $text;
         return $this;
     }
     public function debug()
@@ -82,7 +90,7 @@ class Mail
     }
     public function send(PHPMailer $mail = null)
     {
-        $mail = $mail ?? new PHPMailer();
+        $this->mailer = $mail = $mail ?? new PHPMailer();
         $mail->isSMTP();
         $mail->SMTPAuth = true;
         $mail->Host = $this->host;
@@ -95,10 +103,21 @@ class Mail
             $mail->addAddress($to);
         foreach($this->replyTo as $replyTo)
             $mail->addReplyTo($replyTo);
-        $mail->isHTML(true);
+        if($this->html)
+            $mail->isHTML(true);
         $mail->CharSet = 'UTF-8';
         $mail->Subject = $this->subject;
-        $mail->Body = $this->content;
+        $mail->Body = $this->html;
+        $mail->AltBody = $this->text;
         return $mail->send();
+    }
+    public function close()
+    {
+        if($this->mailer)
+            $this->mailer->smtpClose();
+    }
+    public function __destruct()
+    {
+        $this->close();
     }
 }

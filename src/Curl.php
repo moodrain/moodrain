@@ -13,13 +13,16 @@ class Curl
     private $contentType;
     private $result;
     private $responseType;
+    private $transfer;
 
     public function __construct($url = null)
     {
         $this->url = $url;
         $this->curl = curl_init();
+        $this->transfer = true;
         curl_setopt($this->curl, CURLOPT_RETURNTRANSFER, 1);
         curl_setopt($this->curl, CURLOPT_SSL_VERIFYPEER, 0);
+        curl_setopt($this->curl, CURLOPT_FOLLOWLOCATION, 1);
     }
     public function url($url)
     {
@@ -54,6 +57,8 @@ class Curl
             case 'html' : $this->responseType = 'text/html';break;
             case 'json' : $this->responseType = 'application/json';break;
             case 'xml'  : $this->responseType = 'application/xml';break;
+            case 'pdf'  : $this->responseType = 'application/pdf';break;
+            case 'zip'  : $this->responseType = 'application/zip';break;
             case 'jpg'  : $this->responseType = 'image/jpeg';break;
             case 'png'  : $this->responseType = 'image/png';break;
             case 'gif'  : $this->responseType = 'image/gif';break;
@@ -62,6 +67,16 @@ class Curl
             default     : $this->responseType = $responseType;
         }
         return $this;
+    }
+    public function transfer($transfer = null)
+    {
+        if($transfer !== null)
+        {
+            $this->transfer = $transfer;
+            return $this;
+        }
+        else
+            return $this->transfer;
     }
     public function contentType($contentType = null)
     {
@@ -73,11 +88,10 @@ class Curl
         }
         else
             return $this->contentType;
-
     }
     public function data($data)
     {
-        $this->data = is_array($data) ? http_build_query($data) : $data;
+        $this->data = $data;
         return $this;
     }
     public function file($file)
@@ -147,13 +161,16 @@ class Curl
         curl_setopt($this->curl, CURLOPT_URL, $this->fullUrl());
         curl_setopt($this->curl, CURLOPT_POST, 1);
         if($this->data)
-            curl_setopt($this->curl, CURLOPT_POSTFIELDS, $this->data);
-        if($this->file)
         {
-            $stream = fopen($this->file, 'r');
-            $size = filesize($this->file);
-            curl_setopt($this->curl, CURLOPT_INFILE, $stream);
-            curl_setopt($this->curl, CURLOPT_INFILESIZE, $size);
+            $data = $this->data;
+            if($this->file)
+            {
+                $files = [];
+                foreach ($this->file as $key => $val)
+                    $files[$key] = new \CURLFile($val);
+                $data = array_merge($this->data, $files);
+            }
+            curl_setopt($this->curl, CURLOPT_POSTFIELDS, $data);
         }
         if($returnResult)
             return $this->format($this->handle($this->curl));
@@ -213,22 +230,23 @@ class Curl
     }
     private function format($raw)
     {
-        $contentType = $this->contentType ?? $this->contentType() ?? null;
-        if($contentType)
-            header('Content-Type: ' . $contentType);
-        switch ($this->responseType)
+        if($this->responseType)
+            header('Content-Type: ' . $this->responseType);
+        if($this->transfer)
         {
-            case 'application/json': return json_decode($raw, true);
-            case 'application/xml' : return XML::parse($raw);
-            case 'text/plain'      :
-            case 'text/html'       :
-            case 'image/jpeg'      :
-            case 'image/png'       :
-            case 'image/gif'       :
-            case 'image/bmp'       :
-            case 'image/webp'      :
-            default                : return $raw;
+            if(in_array($this->responseType, [
+                'application/json',
+                'application/xml',]))
+                header('Content-Type: text/plain');
+            switch ($this->responseType)
+            {
+                case 'application/json': return json_decode($raw, true);
+                case 'application/xml' : return XML::parse($raw);
+                default                : return $raw;
+            }
         }
+        else
+            return $raw;
     }
     private function handle($curl)
     {
@@ -241,6 +259,7 @@ class Curl
         $endHeader = false;
         $count = 0;
         $continue = false;
+        $moved = false;
         foreach($response as $row)
         {
             $count++;
@@ -251,14 +270,25 @@ class Curl
                 $val = $header[1] ?? null;
                 if($val == null && strlen($row) != 0)
                 {
-                    if($key == 'HTTP/1.1 100 Continue')
+                    if(strstr($key, '100'))
                         $continue = true;
+                    if(strstr($key, '301') || strstr($key, '302') || strstr($key, '307') || strstr($key, '308'))
+                        $moved = true;
                     $headers['Status'] = $key;
                     continue;
                 }
                 if($continue)
+                {
                     $continue = false;
-                else
+                    continue;
+                }
+                if($moved && strlen($row) == 0)
+                {
+                    $moved = false;
+                    continue;
+                }
+                if($moved)
+                    continue;
                 {
                     if(strlen($row))
                     {
@@ -285,66 +315,3 @@ class Curl
         curl_close($this->curl);
     }
 }
-
-
-//public function do($url, $type=null, $res=null, $data=null, $header=null, $useCookie=null, $cookie=null)
-//    {
-//        $curl = curl_init();
-//        curl_setopt($curl,CURLOPT_URL,$url);
-//        curl_setopt($curl,CURLOPT_RETURNTRANSFER,1);
-//        curl_setopt($curl,CURLOPT_SSL_VERIFYPEER,0);
-//        if($type == 'post')
-//        {
-//            curl_setopt($curl,CURLOPT_POST,1);
-//            if(is_string($data))
-//                curl_setopt($curl,CURLOPT_POSTFIELDS,$data);
-//            else
-//            curl_setopt($curl,CURLOPT_POSTFIELDS,http_build_query($data));
-//        }
-//        else if($type == 'put')
-//        {
-//            curl_setopt($curl,CURLOPT_PUT,1);
-//            curl_setopt($curl,CURLOPT_INFILE, $data['content']);
-//            curl_setopt($curl,CURLOPT_INFILESIZE ,$data['size']);
-//        }
-//        else if($type == 'delete')
-//        {
-//            curl_setopt($curl, CURLOPT_CUSTOMREQUEST, 'DELETE');
-//        }
-//        if($header)
-//        {
-//            $headerData = [];
-//            foreach($header as $key => $value)
-//                array_push($headerData,$key.': ' . $value);
-//            curl_setopt($curl,CURLOPT_HTTPHEADER,$headerData);
-//        }
-//        if($useCookie == 'get')
-//        {
-//            curl_setopt($curl,CURLOPT_HEADER,1);
-//            $content = curl_exec($curl);
-//            curl_close($curl);
-//            preg_match('/Set-Cookie:(.*);/iU',$content,$str);
-//            $cookie = $str[1];
-//            $content = explode("\r\n", $content);
-//            $body = $content[count($content)-1];
-//            return $res == 'json' ? [$cookie,json_encode($body)] : [$cookie,$body];
-//        }
-//        else if($useCookie == 'with')
-//            curl_setopt($curl,CURLOPT_COOKIE,$cookie);
-//        if($res == 'header')
-//        {
-//            curl_setopt($curl,CURLOPT_HEADER,1);
-//            $content = curl_exec($curl);
-//            curl_close($curl);
-//            return explode("\r\n", $content)[0];
-//        }
-//        $response = curl_exec($curl);
-//        curl_close($curl);
-//        switch ($res)
-//        {
-//            case 'json': return json_decode($response,true);
-//            case 'xml' : return XML::parse($response);
-//            case 'jpg' : header('content-type: image/jpeg');return $response;
-//            default    : return $response;
-//        }
-//  }
