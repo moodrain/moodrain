@@ -37,7 +37,7 @@ class Command
             case 'removemuyujson'   : $this->removeMuyuJson($argv[1]);break;
             case 'ftplist'          : $this->ftpList($argv[1]);break;
             case 'ftpget'          : $this->ftpGet($argv[1], null);break;
-            case 'ftpput'           : $this->ftpPut(null, $argv[1]);break;
+            case 'ftpput'           : $this->ftpPut($argv[1], null);break;
             case 'ftpdel'           : $this->ftpDel($argv[1]);break;
             case 'ftpmkdir'         : $this->ftpMkdir($argv[1]);break;
             case 'ftprmdir'         : $this->ftpRmdir($argv[1]);break;
@@ -189,16 +189,16 @@ class Command
         $ftp = new FTP();
         $file = $file ?? $local;
         if($this->optHas('f'))
-            $ftp->enforce()->put($file, $local);
+            $ftp->enforce()->put($local, $file);
         else
         {
             if($ftp->exist($file))
             {
                 if($this->readLine('server file already exists, override? (n)') == 'y')
-                    $ftp->enforce()->put($file, $local);
+                    $ftp->enforce()->put($local, $file);
             }
             else
-                $ftp->put($file, $local);
+                $ftp->put($local, $file);
         }
         echo $ftp->error();
         $ftp->close();

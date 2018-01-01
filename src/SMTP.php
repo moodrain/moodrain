@@ -30,7 +30,7 @@ class SMTP
         else
         {
             $config = new Config();
-            foreach($config('mail', []) as $key => $val)
+            foreach($config('smtp', []) as $key => $val)
                 $this->$key = $val;
         }
     }

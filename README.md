@@ -3,7 +3,7 @@ MoodRain
 Only for MoodRain
 ------------
 ### Example / Code Process:
-		composer require moodrain/moodrain dev-master
+		composer require moodrain/moodrain (dev-master)
 		cp vendor/moodrain/moodrain/muyu muyu
 		php muyu downloadMyuJson demo
 		username: muyu@muyu.com
@@ -23,8 +23,9 @@ Only for MoodRain
 		$curl->close();
 		$pdo = Tool::pdo($config('database.demo'));                                                                         // save in database by PDO
 		(new OSS())->put("{$ups[0]}.html", "moodrain-demo/crawler.html", "text/html;charset=UTF-8");                        // save in Ali OSS
+		(new FTP())->put("{$ups[0]}.html", "crawler.html");                                                                 // save by FTP
 		$mailHtml = '<a href="' . $config('oss.address') . '/moodrain-demo/crawler.html">to see the result</a>';
-		(new Mail())->subject('Crawler Complete')->content($mailHtml)->to('muyu@muyu.com')->send();                         // notify by SMTP
+		(new SMTP())->subject('Crawler Complete')->html($mailHtml)->to('muyu@muyu.com')->send();                            // notify by SMTP
 		(new SMS())->init($config('sms.demo'))->data(['msg' => 'crawler complete!'])->to('13800138000')->send();            // notify by Ali SMS
 
 ### a crawler demo is ready !
@@ -34,8 +35,16 @@ Only for MoodRain
 * some prepared command
 * semantic and simple curl
 * useful function library
-* basic xml transformer 
 * mini Ali OSS and SMS
-* mini mail sender
+* mini ftp client
+* basic xml transformer 
+* mini mail sender and receiver
+* packaging excel reader and writer
 
 Welcome for your advice.
+
+
+#### know it:
+* xml class is only a copy of overtrue/wechat/src/Kernel/Support/XML.php
+* mail sender uses PHPMailer/PHPMailer and reader uses barbushin/php-imap in underlying
+* excel reader and writer uses box/spout in underlying

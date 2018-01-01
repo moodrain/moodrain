@@ -15,15 +15,20 @@ class FTP
     private $server;
     private $error;
 
-    public function __construct(Array $config  = [])
+    public function __construct()
+    {
+        $config = new Config();
+        $this->init($config('ftp'));
+    }
+    public function init(Array $config  = [])
     {
         $conf = new Config();
-        $this->host = $config['host'] ?? $conf('ftp.host');
-        $this->port = $config['port'] ?? $conf('ftp.port', 22);
-        $this->user = $config['user'] ?? $conf('ftp.user');
-        $this->pass = $config['pass'] ?? base64_decode($conf('ftp.pass'));
-        $this->ssl = $config['ssl'] ?? $conf('ftp.ssl', false);
-        $this->prefix = $config['prefix'] ?? $conf('ftp.prefix', null);
+        $this->host = $config['host'] ?? $this->host ?? $conf('ftp.host');
+        $this->port = $config['port'] ?? $this->port ?? $conf('ftp.port', 22);
+        $this->user = $config['user'] ?? $this->user ?? $conf('ftp.user');
+        $this->pass = base64_decode($config['pass']) ?? $this->pass ?? base64_decode($conf('ftp.pass'));
+        $this->ssl = $config['ssl'] ?? $this->ssl ?? $conf('ftp.ssl', false);
+        $this->prefix = $config['prefix'] ?? $this->prefix ?? $conf('ftp.prefix', null);
         $this->force = false;
         $this->conn = $this->ssl ? ftp_ssl_connect($this->host, $this->port) : ftp_connect($this->host, $this->port);
         ftp_login($this->conn, $this->user, $this->pass);
@@ -122,7 +127,7 @@ class FTP
             }
         }
     }
-    public function put($file = null, $local = null)
+    public function put($local = null, $file = null)
     {
         $file = $file ?? $this->server ?? $this->local;
         $local = $local ?? $this->local;
