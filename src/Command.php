@@ -336,7 +336,7 @@ class Command
         $content = $this->readLine('Content');
         $to = $this->readLine('Send to');
         $smtp = new SMTP();
-        $smtp->subject($subject)->html('<p>' . $content . '</p>')->text($content)->to($to)->send();
+        echo $smtp->subject($subject)->html('<p>' . $content . '</p>')->text($content)->to($to)->send() ? '' : 'mail sned fail';
     }
 
     public function __construct($host, $username, $password)

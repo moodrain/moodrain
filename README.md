@@ -39,7 +39,7 @@ Only for MoodRain
 * mini ftp client
 * basic xml transformer 
 * mini mail sender and receiver
-* packaging excel reader and writer
+* packaged excel reader and writer
 
 Welcome for your advice.
 
