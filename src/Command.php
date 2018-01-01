@@ -24,7 +24,7 @@ class Command
             case 'mailread'         : $this->mailRead();break;
             case 'maildel'          : $this->mailDel();break;
             case 'mailsend'         : $this->mailSend();break;
-            default                 : echo 'unknown command';
+            default                 : echo 'unknown command' . PHP_EOL;
         }
     }
     private function command4TwoParam(Array $argv)
@@ -48,7 +48,7 @@ class Command
             case 'maillist'         : $this->mailList($argv[1]);break;
             case 'mailread'         : $this->mailRead($argv[1]);break;
             case 'maildel'          : $this->mailDel($argv[1]);break;
-            default                 : echo 'unknown command';
+            default                 : echo 'unknown command' . PHP_EOL;
         }
     }
     private function command4ThreeParam(Array $argv)
@@ -60,7 +60,7 @@ class Command
             case 'ftpget'   : $this->ftpGet($argv[1], $argv[2]);break;
             case 'ftpput'   : $this->ftpPut($argv[1], $argv[2]);break;
             case 'mailread' : $this->mailRead($argv[1], $argv[2]);break;
-            default         : echo 'unknown command';
+            default         : echo 'unknown command' . PHP_EOL;
         }
     }
     private function command4FourParam(Array $argv)
@@ -68,14 +68,14 @@ class Command
         $command = strtolower($argv[0]);
         switch($command)
         {
-            default       : echo 'unknown command';
+            default       : echo 'unknown command' . PHP_EOL;
         }
     }
 
     private function encodePass()
     {
         $pass = $this->password();
-        echo base64_encode($pass);
+        echo base64_encode($pass) . PHP_EOL;
     }
     private function listMuyuJson()
     {
@@ -181,7 +181,7 @@ class Command
             else
                 $ftp->get($file, $local);
         }
-        echo $ftp->error();
+        echo $ftp->error() . PHP_EOL;
         $ftp->close();
     }
     private function ftpPut($local, $file)
@@ -200,21 +200,21 @@ class Command
             else
                 $ftp->put($local, $file);
         }
-        echo $ftp->error();
+        echo $ftp->error() . PHP_EOL;
         $ftp->close();
     }
     private function ftpDel($file)
     {
         $ftp = new FTP();
         $ftp->del($file);
-        echo $ftp->error();
+        echo $ftp->error() . PHP_EOL;
         $ftp->close();
     }
     private function ftpMkdir($dir)
     {
         $ftp = new FTP();
         $ftp->mkdir($dir);
-        echo $ftp->error();
+        echo $ftp->error() . PHP_EOL;
     }
     private function ftpRmdir($dir)
     {
@@ -231,7 +231,7 @@ class Command
             else
                 $ftp->rmdir($dir);
         }
-        echo $ftp->error();
+        echo $ftp->error() . PHP_EOL;
         $ftp->close();
     }
     private function ossPut($from, $to)
@@ -265,7 +265,7 @@ class Command
             echo PHP_EOL;
         }
         else
-            echo 'list fail';
+            echo 'list fail' . PHP_EOL;
     }
     private function ossGet($file)
     {
@@ -276,7 +276,7 @@ class Command
         {
             $result = XML::parse($file);
             if($result && $result['Code'] == 'NoSuchKey')
-                echo 'file not exists';
+                echo 'file not exists' . PHP_EOL;
             else
             {
                 if(file_exists($basename) && !$this->optHas('f'))
@@ -289,13 +289,13 @@ class Command
             }
         }
         else
-            echo 'download fail';
+            echo 'download fail' . PHP_EOL;
     }
     private function ossDel($file)
     {
         $oss = new OSS();
         if(!$oss->del($file))
-            echo 'delete fail';
+            echo 'delete fail' . PHP_EOL;
     }
     private function mailList($days = null)
     {
@@ -306,7 +306,7 @@ class Command
         foreach($mails as $mail)
             echo PHP_EOL . $index++ . ': ' . $mail['writer'] . '  ' . $mail['subject'] . PHP_EOL . $mail['from'] . '  ' . $mail['date'] . PHP_EOL;
         if(empty($mails))
-            echo 'no new mail';
+            echo 'no new mail' . PHP_EOL;
     }
     private function mailRead($index = null, $receiveFile = false)
     {
@@ -321,14 +321,14 @@ class Command
                 'From:    ' . $mail['writer'] . '<' . $mail['from'] . '>' . PHP_EOL .
                 'Date:    ' . $mail['date'] . PHP_EOL .
                 'Content: ' . $mail['text'] . PHP_EOL . PHP_EOL .
-                'Attachments:' . join(', ', $mail['file']);
+                'Attachments:' . join(', ', $mail['file']) . PHP_EOL;
     }
     private function mailDel($index = null)
     {
         $index = intval($index ?? $this->readLine('the index of mail to delete (0)'));
         $pop = new POP3();
         if(!$pop->del($index))
-            echo 'mail not found';
+            echo 'mail not found' . PHP_EOL;
     }
     private function mailSend()
     {
@@ -336,7 +336,7 @@ class Command
         $content = $this->readLine('Content');
         $to = $this->readLine('Send to');
         $smtp = new SMTP();
-        echo $smtp->subject($subject)->html('<p>' . $content . '</p>')->text($content)->to($to)->send() ? '' : 'mail sned fail';
+        echo $smtp->subject($subject)->html('<p>' . $content . '</p>')->text($content)->to($to)->send() ? '' : 'mail sned fail' . PHP_EOL;
     }
 
     public function __construct($host, $username, $password)
@@ -365,7 +365,7 @@ class Command
         if($result)
         {
             if(isset($result['msg']))
-                echo $result['msg'];
+                echo $result['msg'] . PHP_EOL;
             if($callback)
                 $callback($result);
         }
