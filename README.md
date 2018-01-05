@@ -29,6 +29,7 @@ Only for MoodRain
 		(new SMS())->init($config('sms.demo'))->data(['msg' => 'crawler complete!'])->to('13800138000')->send();            // notify by Ali SMS
 
 ### a crawler demo is ready !
+### [to read the wiki for more ]("https://github.com/moodrain/moodrain/wiki")
 ----------
 ### Tools are as follows:
 * easy and convenient config
