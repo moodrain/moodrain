@@ -6,18 +6,18 @@ namespace Muyu;
  *
  * $config is the only one static property, so it is sync in whole app.
  * muyu.json should be placed in root dir so that this class load it when constructing.
- * or you can call init($config) to load your config which should be Array.
+ * or you can call init($config) to load your config which should be array.
  * all the keys is divided by '.'
  *
  * the summarizes of methods:
  *
- * init(Array $config)
+ * init(array $config)
  *      Manually load your config.
  *
- * firstInit(Array $config)
+ * firstInit(array $config)
  *      Create a new muyu.json and put down $config in JSON, then exit.
  *
- * tryInit(Array $config, Boolean $write = false)
+ * tryInit(array $config, bool $write = false)
  *      Try to load muyu.json, load $config in para instead if muyu.json doesn't existed.
  *
  * set($key, $val)
@@ -47,7 +47,7 @@ namespace Muyu;
 class Config
 {
     private static $config;
-    public function __construct(Array $config = null)
+    public function __construct(array $config = null)
     {
         if(!self::$config)
         {
@@ -62,13 +62,13 @@ class Config
             }
         }
     }
-    public function init(Array $config = null)
+    public function init(array $config = null)
     {
         if($config === null)
             throw new \Exception('invalid config format');
         self::$config = $config;
     }
-    public function firstInit(Array $config)
+    public function firstInit(array $config)
     {
         if(file_exists('muyu.json'))
             throw new \Exception('muyu.json already exists');
@@ -79,7 +79,7 @@ class Config
             exit();
         }
     }
-    public function tryInit(Array $config, Boolean $write = null)
+    public function tryInit(array $config, bool $write = false)
     {
         if(file_exists('muyu.json'))
             $this->init(json_decode(file_get_contents('muyu.json'), true));
@@ -90,7 +90,7 @@ class Config
                 file_put_contents('muyu.json', json_encode($config, JSON_PRETTY_PRINT));
         }
     }
-    public function set($key, $val)
+    public function set(string $key, $val)
     {
         $raw = $key;
         $config = &self::$config;
@@ -115,7 +115,7 @@ class Config
             }
         }
     }
-    public function reset($key, $val)
+    public function reset(string $key, $val)
     {
         $raw = $key;
         $config = &self::$config;
@@ -133,7 +133,7 @@ class Config
             }
         }
     }
-    public function get($key)
+    public function get(string $key)
     {
         $raw = $key;
         $config = &self::$config;
@@ -152,7 +152,7 @@ class Config
             }
         }
     }
-    public function try($key, $default)
+    public function try(string $key, $default)
     {
         $raw = $key;
         $config = &self::$config;
