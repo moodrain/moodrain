@@ -18,27 +18,27 @@ class Excel
     private $error;
     private $firstSheet = true;
 
-    public function __construct($file = null, $sheet = null)
+    public function __construct(string $file = null, string $sheet = null)
     {
         $this->file = $file;
         $this->sheet = $sheet ?? 'Sheet1';
         $this->ext = $file ? Tool::ext($file) : null;
     }
-    public function file($file = null)
+    public function file(string $file = null)
     {
         if(!$file)
             return $this->file;
         $this->file = $file;
         return $this;
     }
-    public function sheet($sheet = null)
+    public function sheet(string $sheet = null)
     {
         if(!$sheet)
             return $this->sheet;
         $this->sheet = $sheet;
         return $this;
     }
-    public function data(Array $data = null)
+    public function data(array $data = null)
     {
         if(!$data)
             return $this->data;
@@ -91,7 +91,7 @@ class Excel
         } catch (\Exception $e) {$this->error = $e->getMessage();}
         return false;
     }
-    public function add($row)
+    public function add(array $row)
     {
         if(!$this->writer)
         {
@@ -132,7 +132,7 @@ class Excel
     {
         return $this->to;
     }
-    public function toFile($file = null)
+    public function toFile(string $file = null)
     {
         try
         {
@@ -143,7 +143,7 @@ class Excel
         } catch (\Exception $e) {$this->error = $e->getMessage();}
         return $this;
     }
-    public function toBrowser($file = null)
+    public function toBrowser(string $file = null)
     {
         try
         {

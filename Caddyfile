@@ -1,3 +1,6 @@
-localhost:80
-root ./
-fastcgi / 127.0.0.1:9000 php
+http://frp.moodrain.cn {
+    fastcgi / 127.0.0.1:9000 php
+}
+localhost:80 {
+    fastcgi / 127.0.0.1:9000 php
+}
