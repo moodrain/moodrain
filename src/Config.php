@@ -47,20 +47,27 @@ namespace Muyu;
 class Config
 {
     private static $config;
+    private static $path = 'muyu.json';
     public function __construct(array $config = null)
     {
         if(!self::$config)
         {
-            if($config !== null)
+            if($config)
                 $this->init($config);
             else
             {
-                if(file_exists('muyu.json'))
-                    $this->init(json_decode(file_get_contents('muyu.json'), true));
+                if(file_exists(self::$path))
+                {
+                    $this->init(json_decode(file_get_contents(self::$path), true));
+                }
                 else
                     $this->init([]);
             }
         }
+    }
+    public static function setPath(string $path)
+    {
+        self::$path = $path;
     }
     public function init(array $config = null)
     {
@@ -74,7 +81,7 @@ class Config
             throw new \Exception('muyu.json already exists');
         else
         {
-            file_put_contents('muyu.json', json_encode($config, JSON_PRETTY_PRINT));
+            file_put_contents('muyu.json', json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
             echo 'muyu.json has created, build an amazing webapp!';
             exit();
         }
@@ -87,7 +94,7 @@ class Config
         {
             $this->init($config);
             if($write)
-                file_put_contents('muyu.json', json_encode($config, JSON_PRETTY_PRINT));
+                file_put_contents('muyu.json', json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
         }
     }
     public function set(string $key, $val)
@@ -117,7 +124,6 @@ class Config
     }
     public function reset(string $key, $val)
     {
-        $raw = $key;
         $config = &self::$config;
         $keys = explode('.', $key);
         $depth = count($keys);
@@ -154,7 +160,6 @@ class Config
     }
     public function try(string $key, $default)
     {
-        $raw = $key;
         $config = &self::$config;
         $keys = explode('.', $key);
         $depth = count($keys);
@@ -170,6 +175,25 @@ class Config
                     return $default;
             }
         }
+    }
+    public function modify($key, $val)
+    {
+        $config = json_decode(file_get_contents(self::$path), true);
+        $data = & $config;
+        $keys = explode('.', $key);
+        $depth = count($keys);
+        foreach($keys as $count => $key)
+        {
+            if($count + 1 == $depth)
+                $config[$key] = $val;
+            else
+            {
+                if(!isset($config[$key]) || !is_array($config[$key]))
+                    $config[$key] = [];
+                $config = &$config[$key];
+            }
+        }
+        file_put_contents(self::$path, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
     }
     public function __invoke(...$paras)
     {
