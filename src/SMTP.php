@@ -9,7 +9,6 @@ class SMTP
     private $user;
     private $pass;
     private $encrypt;
-
     private $from;
     private $name;
     private $to = [];
@@ -17,32 +16,17 @@ class SMTP
     private $subject;
     private $html;
     private $text;
-
     private $mailer;
 
-    public function __construct(Array $config = null)
+    public function __construct(string $muyuConfig = 'smtp')
     {
-        if($config)
-        {
-            foreach($config as $key => $val)
-                $this->$key = $val;
-        }
-        else
-        {
-            $config = new Config();
-            foreach($config('smtp', []) as $key => $val)
-                $this->$key = $val;
-        }
+        $config = new Config();
+        $this->init($config($muyuConfig));
     }
-    public function init(Array $config)
+    public function init(array $config)
     {
-        $this->host = $config['host'] ?? $this->host;
-        $this->port = $config['port'] ?? $this->port;
-        $this->user = $config['user'] ?? $this->user;
-        $this->pass = $config['pass'] ?? $this->pass;
-        $this->encrypt = $config['encrypt'] ?? $this->encrypt;
-        $this->from = $config['from'] ?? $this->from;
-        $this->name = $config['name'] ?? $this->name;
+        foreach($config as $key => $val)
+            $this->$key = $val;
         return $this;
     }
     public function from($mail, $name)

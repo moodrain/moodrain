@@ -24,7 +24,7 @@ class Curl
         curl_setopt($this->curl, CURLOPT_SSL_VERIFYPEER, 0);
         curl_setopt($this->curl, CURLOPT_FOLLOWLOCATION, 1);
     }
-    public function url(string $url)
+    public function url(string $url) : Curl
     {
         $this->url = $url;
         return $this;
@@ -39,17 +39,17 @@ class Curl
         else
             return $this->url . $this->path . ( $this->query ? '?' . http_build_query($this->query) : '');
     }
-    public function path(string $path)
+    public function path(string $path) : Curl
     {
         $this->path = $path;
         return $this;
     }
-    public function query(array $query)
+    public function query(array $query) : Curl
     {
         $this->query = $query;
         return $this;
     }
-    public function receive(string $responseType)
+    public function receive(string $responseType) : Curl
     {
         switch($responseType)
         {
@@ -68,7 +68,7 @@ class Curl
         }
         return $this;
     }
-    public function transfer($transfer = null)
+    public function transfer(bool $transfer = null)
     {
         if($transfer !== null)
         {
@@ -78,7 +78,7 @@ class Curl
         else
             return $this->transfer;
     }
-    public function contentType(string $contentType = null)
+    public function contentType(string $contentType = null) : Curl
     {
         if($contentType)
         {
@@ -89,14 +89,19 @@ class Curl
         else
             return $this->contentType;
     }
-    public function data(array $data)
+    public function data(array $data) : Curl
     {
         $this->data = $data;
         return $this;
     }
-    public function file($file)
+    public function file($file) : Curl
     {
         $this->file = $file;
+        return $this;
+    }
+    public function string(string $data) : Curl
+    {
+        $this->data = $data;
         return $this;
     }
     public function cookie(array $cookie = null)
@@ -135,11 +140,11 @@ class Curl
         else
             return $this->result['header'];
     }
-    public function status()
+    public function status() : string
     {
         return $this->result['header']['Status'];
     }
-    public function content()
+    public function content() : string
     {
         return $this->result['content'];
     }
@@ -163,12 +168,15 @@ class Curl
         if($this->data)
         {
             $data = $this->data;
-            if($this->file)
+            if(is_array($data))
             {
-                $files = [];
-                foreach ($this->file as $key => $val)
-                    $files[$key] = new \CURLFile($val);
-                $data = array_merge($this->data, $files);
+                if($this->file)
+                {
+                    $files = [];
+                    foreach ($this->file as $key => $val)
+                        $files[$key] = new \CURLFile($val);
+                    $data = array_merge($this->data, $files);
+                }
             }
             curl_setopt($this->curl, CURLOPT_POSTFIELDS, $data);
         }
@@ -228,7 +236,7 @@ class Curl
             return $this;
         }
     }
-    private function format($raw)
+    private function format(string $raw)
     {
         if($this->responseType)
             header('Content-Type: ' . $this->responseType);
@@ -248,7 +256,7 @@ class Curl
         else
             return $raw;
     }
-    private function handle($curl)
+    private function handle($curl) : string
     {
         curl_setopt($curl, CURLOPT_HEADER, 1);
         $content = curl_exec($curl);
@@ -310,7 +318,7 @@ class Curl
         $this->result['content'] = $content;
         return $this->content();
     }
-    public function close()
+    public function close() : void
     {
         curl_close($this->curl);
     }

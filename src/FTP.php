@@ -15,25 +15,23 @@ class FTP
     private $server;
     private $error;
 
-    public function __construct()
+    public function __construct(string $muyuConfig = 'ftp')
     {
         $config = new Config();
-        $this->init($config('ftp'));
+        $this->init($config($muyuConfig));
     }
-    public function init(Array $config  = [])
+    public function init(array $config  = []) : FTP
     {
-        $conf = new Config();
-        $this->host = $config['host'] ?? $this->host ?? $conf('ftp.host');
-        $this->port = $config['port'] ?? $this->port ?? $conf('ftp.port', 22);
-        $this->user = $config['user'] ?? $this->user ?? $conf('ftp.user');
-        $this->pass = base64_decode($config['pass']) ?? $this->pass ?? base64_decode($conf('ftp.pass'));
-        $this->ssl = $config['ssl'] ?? $this->ssl ?? $conf('ftp.ssl', false);
-        $this->prefix = $config['prefix'] ?? $this->prefix ?? $conf('ftp.prefix', null);
+        foreach($config as $key => $val)
+            $this->$key = $val;
+        $this->pass = base64_decode($config['pass'] ?? '');
         $this->force = false;
+        $this->ssl = false;
         $this->conn = $this->ssl ? ftp_ssl_connect($this->host, $this->port) : ftp_connect($this->host, $this->port);
         ftp_login($this->conn, $this->user, $this->pass);
+        return $this;
     }
-    public function prefix($prefix = null)
+    public function prefix(string $prefix = null)
     {
         if($prefix)
         {
@@ -43,7 +41,7 @@ class FTP
         else
             return $this->prefix;
     }
-    public function force($force = null)
+    public function force(bool $force = null)
     {
         if($force === null)
             return $this->force;
@@ -63,7 +61,7 @@ class FTP
         $this->force = false;
         return $this;
     }
-    public function local($local = null)
+    public function local(string $local = null)
     {
         if($local)
         {
@@ -73,7 +71,7 @@ class FTP
         else
             return $this->local;
     }
-    public function server($server = null)
+    public function server(string $server = null)
     {
         if($server)
         {
@@ -83,19 +81,19 @@ class FTP
         else
             return $this->server;
     }
-    public function error()
+    public function error() : string
     {
         return $this->error;
     }
 
-    public function exist($file = null)
+    public function exist(string $file = null) : bool
     {
         $file = $file ?? $this->server;
         $file = $this->prefix ? $this->prefix . '/' . $file : $file;
         $result = @ftp_nlist($this->conn, $file);
         return $result || $result === [] ? true : false;
     }
-    public function list($dir = null)
+    public function list(string $dir = null) : array
     {
         $dir = $dir ?? $this->server;
         $dir = $this->prefix ? $this->prefix . '/' . $dir : $dir;
@@ -103,7 +101,7 @@ class FTP
         $files = $files == false ? [] : $files;
         return $files;
     }
-    public function get($file = null, $local = null)
+    public function get(string $file = null, string $local = null) : bool
     {
         $file = $file ?? $this->server;
         $local = $local ?? $this->local;
@@ -127,7 +125,7 @@ class FTP
             }
         }
     }
-    public function put($local = null, $file = null)
+    public function put(string $local = null, string $file = null) : bool
     {
         $file = $file ?? $this->server ?? $this->local;
         $local = $local ?? $this->local;
@@ -151,7 +149,7 @@ class FTP
         else
             return @ftp_put($this->conn, $file, $local, FTP_BINARY);
     }
-    public function mkdir($dir = null)
+    public function mkdir(string $dir = null) : bool
     {
         $dir = $dir ?? $this->server;
         if($this->exist($dir))
@@ -170,7 +168,7 @@ class FTP
             return @ftp_mkdir($this->conn, $dir);
         }
     }
-    public function rmdir($dir = null)
+    public function rmdir(string $dir = null) : bool
     {
         $dir = $dir ?? $this->server;
         if(!$this->exist($dir))
@@ -214,7 +212,7 @@ class FTP
             }
         }
     }
-    public function del($file = null)
+    public function del(string $file = null) : bool
     {
         $file = $file ?? $this->server;
         if(!$this->exist($file))
@@ -233,7 +231,7 @@ class FTP
             return @ftp_delete($this->conn, $file);
         }
     }
-    public function close()
+    public function close() : void
     {
         ftp_close($this->conn);
     }

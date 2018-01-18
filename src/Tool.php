@@ -4,9 +4,7 @@ use \PDO;
 
 class Tool
 {
-    private static $config;
-
-    public static function validate($type, $value)
+    public static function validate(string $type, $value) : bool
     {
         switch($type)
         {
@@ -18,11 +16,11 @@ class Tool
             case 'float' : return filter_var($value, FILTER_VALIDATE_FLOAT);
         }
     }
-    public static function timezone(string $timezone = 'PRC')
+    public static function timezone(string $timezone = 'PRC') : void
     {
         date_default_timezone_set($timezone);
     }
-    public static function date()
+    public static function date() : string
     {
         return date('Y-m-d H:i:s');
     }
@@ -30,32 +28,31 @@ class Tool
     {
         return $array[array_rand($array)];
     }
-    public static function hump(string $str)
+    public static function hump(string $str) : string
     {
         return preg_replace_callback('/([-_]+([a-z]{1}))/i',function($matches){
             return strtoupper($matches[2]);
         }, $str);
     }
-    public static function pdo(array $configArr = null, $errMode = PDO::ERRMODE_EXCEPTION)
+    public static function pdo(array $conf = null, array $attr = [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]) : PDO
     {
-        if(!self::$config)
-            self::$config = new Config();
-        $config  = self::$config;
-        $host = $configArr['host'] ?? $config('database.host');
-        $type = $configArr['type'] ?? $config('database.type');
-        $db = $configArr['db'] ?? $config('database.db');
-        $user = $configArr['user'] ?? $config('database.user');
-        $pass = $configArr['pass'] ?? $config('database.pass');
-        return new PDO("$type:host=$host;dbname=$db;charset=utf8", $user, $pass, [PDO::ATTR_ERRMODE => $errMode]);
+        $config  = new Config();
+        $host = $conf['host'] ?? $config('database.host');
+        $type = $conf['type'] ?? $config('database.type');
+        $db   = $conf['db']   ?? $config('database.db');
+        $user = $conf['user'] ?? $config('database.user');
+        $pass = $conf['pass'] ?? $config('database.pass');
+        return new PDO("$type:host=$host;dbname=$db;charset=utf8", $user, $pass, $attr);
     }
-    public static function log($log)
+    public static function log($log) : void
     {
         $file = fopen('log.txt', 'a');
         if(!is_string($log))
             $log = json_encode($log, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
         fwrite($file, $log . PHP_EOL);
+        fclose($file);
     }
-    public static function res($code, $msg, $data, $status = null)
+    public static function res(int $code, string $msg, $data, int $status = null) : string
     {
         $statusHeader = 'HTTP/1.1 ';
         switch($status)
@@ -77,7 +74,7 @@ class Tool
         header('Content-Type: application/json');
         return json_encode(['code' => $code, 'msg' => $msg, 'data' => $data]);
     }
-    public static function abc123($in, $up = false)
+    public static function abc123(string $in, bool $up = false) : string
     {
         $ascii = ord($in);
         switch($ascii)
@@ -89,7 +86,7 @@ class Tool
             default : return null;
         }
     }
-    public static function deep($arr)
+    public static function deep($arr) : int
     {
         $deep = 1;
         if(!is_array($arr))
@@ -101,7 +98,7 @@ class Tool
         }
         return $deep;
     }
-    public static function strBetween($str, $kw1, $kw2)
+    public static function strBetween(string $str, string $kw1, string $kw2) : string
     {
         $st = stripos($str, $kw1);
         $ed = stripos($str, $kw2);
@@ -110,7 +107,7 @@ class Tool
         $str = substr($str, $st + strlen($kw1), $ed - $st - strlen($kw1));
         return $str;
     }
-    public static function seed($seeder)
+    public static function seed(string $seeder) : string
     {
         switch($seeder)
         {
@@ -161,19 +158,19 @@ class Tool
             }
         }
     }
-    public static function isSet($key, array $array)
+    public static function isSet($key, array $array) : bool
     {
         return array_key_exists($key, $array);
     }
-    public static function ext($filename)
+    public static function ext(string $filename) : string
     {
         return explode('.', basename($filename))[1] ?? null;
     }
-    public static function gmt()
+    public static function gmt() : string
     {
         return gmdate('D, d M Y H:i:s T');
     }
-    public static function gmt_iso8601($time)
+    public static function gmt_iso8601($time) : string
     {
         $dtStr = date("c", $time);
         $myDatetime = new \DateTime($dtStr);

@@ -1,6 +1,5 @@
 <?php
 namespace Muyu;
-
 class Command
 {
     private $host;
@@ -8,7 +7,7 @@ class Command
     private $password;
     private $options;
 
-    private function command4OneParam(Array $argv)
+    private function command4OneParam(array $argv) : void
     {
         $command = strtolower($argv[0]);
         switch($command)
@@ -27,7 +26,7 @@ class Command
             default                 : echo 'unknown command' . PHP_EOL;
         }
     }
-    private function command4TwoParam(Array $argv)
+    private function command4TwoParam(array $argv) : void
     {
         $command = strtolower($argv[0]);
         switch($command)
@@ -51,7 +50,7 @@ class Command
             default                 : echo 'unknown command' . PHP_EOL;
         }
     }
-    private function command4ThreeParam(Array $argv)
+    private function command4ThreeParam(array $argv) : void
     {
         $command = strtolower($argv[0]);
         switch($command)
@@ -63,7 +62,7 @@ class Command
             default         : echo 'unknown command' . PHP_EOL;
         }
     }
-    private function command4FourParam(Array $argv)
+    private function command4FourParam(array $argv) : void
     {
         $command = strtolower($argv[0]);
         switch($command)
@@ -71,13 +70,12 @@ class Command
             default       : echo 'unknown command' . PHP_EOL;
         }
     }
-
-    private function encodePass()
+    private function encodePass() : void
     {
         $pass = $this->password();
         echo base64_encode($pass) . PHP_EOL;
     }
-    private function listMuyuJson()
+    private function listMuyuJson() : void
     {
         $username = $this->username ?? $this->readLine('username');
         $password = $this->password ?? $this->password('password');
@@ -87,7 +85,7 @@ class Command
         ])->receive('json')->post();
         $this->response($result);
     }
-    private function downloadMuyuJson($file = null)
+    private function downloadMuyuJson(string $file = null) : void
     {
         $file = $file ?? $this->readLine('muyuJsonName');
         $username = $this->username ?? $this->readLine('username');
@@ -115,7 +113,7 @@ class Command
             }
         });
     }
-    private function uploadMuyuJson($file = null)
+    private function uploadMuyuJson(string $file = null) : void
     {
         $muyuJson = file_get_contents('muyu.json');
         if(json_decode($muyuJson) == null)
@@ -145,7 +143,7 @@ class Command
                 }
         });
     }
-    private function removeMuyuJson($file = null)
+    private function removeMuyuJson(string $file = null) : void
     {
         $file = $file ?? $this->readLine('muyuJsonName');
         $username = $this->username ?? $this->readLine('username');
@@ -156,7 +154,7 @@ class Command
         ])->receive('json')->post();
         $this->response($result);
     }
-    private function ftpList($dir)
+    private function ftpList(string $dir) : void
     {
         $ftp = new FTP();
         $files = $ftp->list($dir);
@@ -165,7 +163,7 @@ class Command
             echo ($prefix ? str_replace($prefix, '', $file) : $file) . PHP_EOL;
         $ftp->close();
     }
-    private function ftpGet($file, $local)
+    private function ftpGet(string $file, string $local) : void
     {
         $ftp = new FTP();
         $local = $local ?? $file;
@@ -184,7 +182,7 @@ class Command
         echo $ftp->error() . PHP_EOL;
         $ftp->close();
     }
-    private function ftpPut($local, $file)
+    private function ftpPut(string $local, string $file) : void
     {
         $ftp = new FTP();
         $file = $file ?? $local;
@@ -203,20 +201,20 @@ class Command
         echo $ftp->error() . PHP_EOL;
         $ftp->close();
     }
-    private function ftpDel($file)
+    private function ftpDel(string $file) : void
     {
         $ftp = new FTP();
         $ftp->del($file);
         echo $ftp->error() . PHP_EOL;
         $ftp->close();
     }
-    private function ftpMkdir($dir)
+    private function ftpMkdir(string $dir) : void
     {
         $ftp = new FTP();
         $ftp->mkdir($dir);
         echo $ftp->error() . PHP_EOL;
     }
-    private function ftpRmdir($dir)
+    private function ftpRmdir(string $dir) : void
     {
         $ftp = new FTP();
         if($this->optHas('f'))
@@ -234,7 +232,7 @@ class Command
         echo $ftp->error() . PHP_EOL;
         $ftp->close();
     }
-    private function ossPut($from, $to)
+    private function ossPut(string $from, string $to) : void
     {
         if($to == null)
             $to = $from;
@@ -250,12 +248,14 @@ class Command
         else
             $oss->put($from, $to);
     }
-    private function ossList($path)
+    private function ossList(string $path) : void
     {
         $oss = new OSS();
         $files = $oss->list($path);
         if($files)
         {
+            if(Tool::deep($files) == 1)
+                $files = [$files];
             foreach($files as $file)
             {
                 $isDir = substr($file['Key'], -1) == '/';
@@ -265,9 +265,9 @@ class Command
             echo PHP_EOL;
         }
         else
-            echo 'list fail' . PHP_EOL;
+            echo 'empty path' . PHP_EOL;
     }
-    private function ossGet($file)
+    private function ossGet(string $file) : void
     {
         $oss = new OSS();
         $basename = pathinfo($file)['basename'];
@@ -291,13 +291,13 @@ class Command
         else
             echo 'download fail' . PHP_EOL;
     }
-    private function ossDel($file)
+    private function ossDel(string $file) : void
     {
         $oss = new OSS();
         if(!$oss->del($file))
             echo 'delete fail' . PHP_EOL;
     }
-    private function mailList($days = null)
+    private function mailList(int $days = null) : void
     {
         $days = intval($days ?? $this->readLine('list mails before days (0)'));
         $pop = new POP3();
@@ -308,7 +308,7 @@ class Command
         if(empty($mails))
             echo 'no new mail' . PHP_EOL;
     }
-    private function mailRead($index = null, $receiveFile = false)
+    private function mailRead(int $index = null, bool $receiveFile = false) : void
     {
         $index = intval($index ?? $this->readLine('the index of mail to read (0)'));
         $pop = new POP3(['path' => $receiveFile ? 'mailAttachments' : null]);
@@ -323,14 +323,14 @@ class Command
                 'Content: ' . $mail['text'] . PHP_EOL . PHP_EOL .
                 'Attachments:' . join(', ', $mail['file']) . PHP_EOL;
     }
-    private function mailDel($index = null)
+    private function mailDel(int $index = null) : void
     {
         $index = intval($index ?? $this->readLine('the index of mail to delete (0)'));
         $pop = new POP3();
         if(!$pop->del($index))
             echo 'mail not found' . PHP_EOL;
     }
-    private function mailSend()
+    private function mailSend() : void
     {
         $subject = $this->readLine('Subject');
         $content = $this->readLine('Content');
@@ -338,14 +338,13 @@ class Command
         $smtp = new SMTP();
         echo $smtp->subject($subject)->html('<p>' . $content . '</p>')->text($content)->to($to)->send() ? '' : 'mail sned fail' . PHP_EOL;
     }
-
-    public function __construct($host, $username, $password)
+    public function __construct(string $host, string $username, string $password)
     {
         $this->host = $host;
         $this->username = $username;
         $this->password = $password;
     }
-    public function read(Array $argv, Array $options)
+    public function read(array $argv, array $options)
     {
         array_shift($argv);
         foreach($options as $option)
@@ -360,7 +359,7 @@ class Command
         else if(count($argv) == 4)
             $this->command4FourParam($argv);
     }
-    private function response(Array $result = null, callable $callback = null)
+    private function response(array $result = null, callable $callback = null)
     {
         if($result)
         {
@@ -370,21 +369,21 @@ class Command
                 $callback($result);
         }
     }
-    private function optHas($option)
+    private function optHas(string $option) : bool
     {
         return isset($this->options[$option]);
     }
-    private function optVal($option)
+    private function optVal(string $option) : string
     {
         return $this->options[$option] ?? null;
     }
-    private function readLine($echo = null)
+    private function readLine(string $echo = null) : string
     {
         if($echo)
             echo $echo . ': ';
         return trim(fgets(STDIN));
     }
-    private function password($echo = 'password')
+    private function password(string $echo = 'password') : string
     {
         if (strtoupper(substr(PHP_OS, 0, 3)) == 'WIN')
         {

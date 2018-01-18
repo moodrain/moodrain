@@ -8,21 +8,20 @@ class POP3
     private $user;
     private $pass;
     private $path;
-
     private $box;
     private $mails = [];
     private $after;
 
-    public function __construct(Array $config = [])
+    public function __construct(string $muyuConfig = 'pop3')
     {
-        $conf = new Config();
-        $this->host = $config['host'] ?? $conf('pop3.host');
-        $this->port = $config['port'] ?? $conf('pop3.port');
-        $this->user = $config['user'] ?? $conf('pop3.user');
-        $this->pass = $config['pass'] ?? $conf('pop3.pass');
-        $this->path = $config['path'] ?? $conf('pop3.path', null);
-        $this->after = $config['after'] ?? $conf('pop3.after', null) ?? date('Y-m-d H:i:s', strtotime('-7 days'));
-        date_default_timezone_set('Asia/Shanghai');
+        $config = new Config();
+        $this->init($config($muyuConfig));
+    }
+    public function init(array $config)
+    {
+        foreach ($config as $key => $val)
+            $this->$key = $val;
+        Tool::timezone($config['timezone'] ?? 'PRC');
         $host = '{'. $this->host . ':' . $this->port . '/pop/ssl}INBOX';
         if($this->path && !file_exists($this->path))
             mkdir($this->path);
@@ -38,17 +37,18 @@ class POP3
             $mail['date'] = date('Y-m-d H:i:s', $mailInfo->udate);
             $this->mails[] = $mail;
         }
+        return $this;
     }
-    public function list()
+    public function list() : array
     {
         return $this->mails;
     }
-    public function mails($read = true)
+    public function mails(bool $read = true) : array
     {
         $news = [];
         for($i = 0;$i < count($this->mails);$i++)
         {
-            if($this->mails[$i]['date'] <= $this->after)
+            if(isset($this->after) && $this->mails[$i]['date'] <= $this->after)
                 break;
             $news[] = $this->mails[$i] = $read ? $this->get($i) : $this->mails[$i];
         }
@@ -68,7 +68,7 @@ class POP3
         else
             return $this->after;
     }
-    public function get($index = 0)
+    public function get(int $index = 0) : array
     {
         if(!($id = $this->mails[$index]['id'] ?? null))
             return null;
@@ -100,7 +100,7 @@ class POP3
         $mail['file'] = $files;
         return $mail;
     }
-    public function del($index)
+    public function del(int $index) : bool
     {
         if(!($id = $this->mails[$index]['id'] ?? null))
             return false;
@@ -108,7 +108,7 @@ class POP3
         $this->box->deleteMail($id);
         return true;
     }
-    public function close()
+    public function close() : void
     {
         $this->box->disconnect();
     }

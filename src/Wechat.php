@@ -9,38 +9,39 @@ class Wechat
     private $template;
     private $muyuConfig;
     private $getUserAccessTokenUrl;
-
     private $fromUserName;
     private $toUserName;
     private $receiveData;
     private $handler = [];
-    private $isResponse = false;
-
+    private $isResponsed = false;
     private $error;
 
-    public function response()
+    public function response() : void
     {
         foreach($this->handler as $handler)
             $handler($this->receiveData);
     }
-    public function addMsgHandler(callable $handler)
+    public function addMsgHandler(callable $handler) : void
     {
         $this->handler[] = $handler;
     }
-    public function responseTextMsg(string $content)
+    public function responseTextMsg(string $content) : string
     {
-        if($this->isResponse)
-            Tool::log('尝试多次回复同一条消息' . $this->rawReceiveData());
+        if($this->isResponsed)
+        {
+            $this->error = 'try to response a message twice';
+            return false;
+        }
         $data = $this->receiveData;
         $responseStr = sprintf($this->template, $data['fromUserName'], $data['toUserName'], time(), 'text', $content);
-        $this->isResponse = true;
+        $this->isResponsed = true;
         return $responseStr;
     }
-    public function getAccessToken()
+    public function getAccessToken() : string
     {
         $config = new Config();
-        $accessToken = $config('wechat.accessToken', null);
-        $expire = $config('wechat.expire', null);
+        $accessToken = $config($this->muyuConfig . '.accessToken', null);
+        $expire = $config($this->muyuConfig . '.expire', null);
         if(!$accessToken || time() > $expire)
         {
             $curl = new Curl();
@@ -80,7 +81,7 @@ class Wechat
         }
         return $accessToken;
     }
-    public function getUserCode($subscribe = true)
+    public function getUserCode(bool $subscribe = true) : void
     {
         if(!$this->getUserAccessTokenUrl)
         {
@@ -89,9 +90,9 @@ class Wechat
         }
         $redirectUrl = urlencode($this->getUserAccessTokenUrl);
         $scode = $subscribe ? 'snsapi_base' : 'snsapi_userinfo';
-        header("Location: https://open.weixin.qq.com/connect/oauth2/authorize?appid={$this->appId}&redirect_uri={$redirectUrl}&response_type=code&scope=snsapi_base&state=muyuchengfeng#wechat_redirect");
+        header("Location: https://open.weixin.qq.com/connect/oauth2/authorize?appid={$this->appId}&redirect_uri={$redirectUrl}&response_type=code&scope={$scode}&state=muyuchengfeng#wechat_redirect");
     }
-    public function getUserAccessToken()
+    public function getUserAccessToken() : string
     {
         $code = $_GET['code'] ?? null;
         $curl = new Curl();
@@ -108,7 +109,7 @@ class Wechat
         }
         return $data;
     }
-    public function getUserInfo($openId, $userAccessToken)
+    public function getUserInfo(string $openId, string $userAccessToken)
     {
         $curl = new Curl();
         $data = $curl->url('https://api.weixin.qq.com/sns/userinfo')->query([
@@ -127,9 +128,7 @@ class Wechat
     {
         $this->muyuConfig = $muyuConfig;
         $config = new Config();
-        $config = $config($this->muyuConfig);
-        foreach ($config as $key => $val)
-            $this->$key = $val;
+        $this->init($config($this->muyuConfig));
         $this->template =
         "<xml>
             <ToUserName><![CDATA[%s]]></ToUserName>
@@ -140,19 +139,12 @@ class Wechat
             <FuncFlag>0</FuncFlag>
         </xml>";
     }
-    public function init(array $config)
+    public function init(array $config) : void
     {
         foreach ($config as $key => $val)
-            $this->key = $val;
+            $this->$key = $val;
     }
-    public function muyuConfig(string $path = null)
-    {
-        if($path)
-            $this->muyuConfig = $path;
-        else
-            return $this->muyuConfig;
-    }
-    public function auth()
+    public function authServer() : void
     {
         echo $_GET['echostr'];
         exit();
@@ -161,41 +153,35 @@ class Wechat
     {
         return $key ? $this->receiveData[$key] : $this->receiveData;
     }
-    public function msgHandler()
+    public function msgHandler() : array
     {
         return $this->handler;
     }
-    public function isResponse()
+    public function isResponsed() : bool
     {
-        return $this->isResponse;
+        return $this->isResponsed;
     }
-    public function isSubscribe()
+    public function isSubscribeEvent() : bool
     {
         if($this->receiveData['msgType'] == 'event' && $this->receiveData['event'] == 'subscribe')
             return true;
     }
-    public function isUnSubscribe()
+    public function isUnSubscribeEvent() : bool
     {
         if($this->receiveData['msgType'] == 'event' && $this->receiveData['event'] == 'unsubscribe')
             return true;
     }
-    public function isText()
+    public function isTextMsg() : bool
     {
         return $this->receiveData['msgType'] == 'text';
     }
-    private function check()
+    public function receive() : array
     {
-        $signature = $_GET["signature"] ?? null;
-        $timestamp = $_GET["timestamp"] ?? null;
-        $nonce = $_GET["nonce"] ?? null;
-        $tmpArr = [$this->token, $timestamp, $nonce];
-        sort($tmpArr, SORT_STRING);
-        if(!sha1(implode($tmpArr)) == $signature)
-            exit();
-    }
-    public function receive()
-    {
-        $this->check();
+        if(!$this->check())
+        {
+            $this->error = 'check() not pass';
+            return [];
+        }
         $data = XML::parse(file_get_contents("php://input"));
         $new = [];
         foreach($data as $key => $val)
@@ -205,13 +191,27 @@ class Wechat
         $this->toUserName = $this->receiveData['toUserName'];
         return $new;
     }
-    public function rawReceiveData()
+    public function rawReceiveData() : string
     {
-        $this->check();
+        if(!$this->check())
+        {
+            $this->error = 'check() not pass';
+            return null;
+        }
         return file_get_contents("php://input");
     }
-    public function error()
+    public function error() : string
     {
         return $this->error;
+    }
+    public function check() : bool
+    {
+        $signature = $_GET["signature"] ?? null;
+        $timestamp = $_GET["timestamp"] ?? null;
+        $nonce = $_GET["nonce"] ?? null;
+        $tmpArr = [$this->token, $timestamp, $nonce];
+        sort($tmpArr, SORT_STRING);
+        return sha1(implode($tmpArr)) == $signature;
+
     }
 }

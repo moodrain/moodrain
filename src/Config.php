@@ -65,17 +65,18 @@ class Config
             }
         }
     }
-    public static function setPath(string $path)
+    public static function setPath(string $path) : void
     {
         self::$path = $path;
     }
-    public function init(array $config = null)
+    public function init(array $config = null) : Config
     {
         if($config === null)
             throw new \Exception('invalid config format');
         self::$config = $config;
+        return $this;
     }
-    public function firstInit(array $config)
+    public function firstInit(array $config) : void
     {
         if(file_exists('muyu.json'))
             throw new \Exception('muyu.json already exists');
@@ -86,7 +87,7 @@ class Config
             exit();
         }
     }
-    public function tryInit(array $config, bool $write = false)
+    public function tryInit(array $config, bool $write = false) : void
     {
         if(file_exists('muyu.json'))
             $this->init(json_decode(file_get_contents('muyu.json'), true));
@@ -97,7 +98,7 @@ class Config
                 file_put_contents('muyu.json', json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
         }
     }
-    public function set(string $key, $val)
+    public function set(string $key, $val) : void
     {
         $raw = $key;
         $config = &self::$config;
@@ -122,7 +123,7 @@ class Config
             }
         }
     }
-    public function reset(string $key, $val)
+    public function reset(string $key, $val) : void
     {
         $config = &self::$config;
         $keys = explode('.', $key);
@@ -176,7 +177,7 @@ class Config
             }
         }
     }
-    public function modify($key, $val)
+    public function modify($key, $val) : void
     {
         $config = json_decode(file_get_contents(self::$path), true);
         $data = & $config;
@@ -202,7 +203,7 @@ class Config
         else
             return $this->get($paras[0]);
     }
-    public function dump()
+    public function dump() : void
     {
         var_dump(self::$config);
     }

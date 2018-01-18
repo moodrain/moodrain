@@ -11,6 +11,7 @@ class SMS
     private $templateCode;
     private $type;
     private $directSMS;
+    private $error;
     private $template =
         '<?xml version="1.0" encoding="utf-8"?>
             <Message xmlns="http://mns.aliyuncs.com/doc/v1/">
@@ -20,48 +21,33 @@ class SMS
             </MessageAttributes>
         </Message>';
 
-    public function __construct(Array $config = null)
+    public function __construct(string $muyuConfig = 'sms')
     {
-        if($config)
-        {
-            foreach($config as $key => $val)
-                $this->$key = $val;
-        }
-        else
-        {
-            $config = new Config();
-            foreach($config('sms', []) as $key => $val)
-                $this->$key = $val;
-        }
+        $config = new Config();
+        $this->init($config($muyuConfig));
+    }
+    public function init(array $config) : SMS
+    {
+        foreach ($config as $key => $val)
+            $this->$key = $val;
         $this->directSMS['FreeSignName'] = $this->freeSignName;
         $this->directSMS['TemplateCode'] = $this->templateCode;
         $this->directSMS['Type'] = $this->type;
-    }
-    public function init(Array $config)
-    {
-        $this->accessKeyId = $config['accessKeyId'] ?? $this->accessKeyId;
-        $this->accessKeySecret = $config['accessKeySecret'] ?? $this->accessKeySecret;
-        $this->freeSignName = $this->directSMS['FreeSignName'] = $config['freeSignName'] ?? $this->freeSignName;
-        $this->templateCode = $this->directSMS['TemplateCode'] = $config['templateCode'] ?? $this->templateCode;
-        $this->type = $this->directSMS['Type'] = $config['type'] ?? $this->type;
-        $this->endPoint = $config['endPoint'] ?? $this->endPoint;
-        $this->topic = $config['topic'] ?? $this->topic;
         return $this;
     }
-    public function to($phone)
+    public function to($phone) : SMS
     {
         $this->directSMS['Receiver'] = is_array($phone) ? implode(',', $phone) : $phone;
         return $this;
     }
-    public function data(Array $data, $setReceiver = true)
+    public function data(array $data, bool $setReceiver = true)
     {
-        if(is_array(current($data)))
+        if(Tool::deep($data) == 2)
         {
             if($this->type != 'multiContent')
             {
-//                throw new \Exception('this SMS type is not multiContent');
-                echo 'this SMS type is not multiContent';
-                exit(1);
+                $this->error = 'this SMS type is not multiContent';
+                return false;
             }
             $phones = [];
             foreach($data as $key => $val)
@@ -91,9 +77,9 @@ class SMS
             'Date' => Tool::gmt(),
             'Host' => $this->endPoint,
             'x-mns-version' => '2015-06-06',
-        ])->receive('xml')->data($data)->post();
+        ])->receive('xml')->string($data)->post();
     }
-    public function sign($method, $resource)
+    private function sign(string $method, string $resource) : string
     {
         $method = strtoupper($method);
         $resource = '/' . $resource;
@@ -104,5 +90,9 @@ class SMS
         $hash = base64_encode(hash_hmac('sha1', $data, $accessKeySecret, true));
         $Authorization = 'MNS ' . $accessKeyId . ':' . $hash;
         return $Authorization;
+    }
+    public function error() : string
+    {
+        return $this->error;
     }
 }

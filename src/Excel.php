@@ -126,9 +126,12 @@ class Excel
         else if(Tool::deep($row) == 1)
             $this->writer->addRow($row);
         else
+        {
             $this->error = 'the row you add is not well format';
+            return false;
+        }
     }
-    public function to()
+    public function to() : string
     {
         return $this->to;
     }
@@ -140,7 +143,7 @@ class Excel
             $this->writer = $this->writer ?? WriterFactory::create(Type::XLSX);
             $this->writer->openToFile($this->file);
             $this->firstSheet = true;
-        } catch (\Exception $e) {$this->error = $e->getMessage();}
+        } catch (\Exception $e) {$this->error = $e->getMessage();return false;}
         return $this;
     }
     public function toBrowser(string $file = null)
@@ -151,20 +154,20 @@ class Excel
             $this->writer = $this->writer ?? WriterFactory::create(Type::XLSX);
             $this->writer->openToBrowser($this->file);
             $this->firstSheet = true;
-        } catch (\Exception $e) {$this->error = $e->getMessage();}
+        } catch (\Exception $e) {$this->error = $e->getMessage();return false;}
         return $this;
     }
-    public function download()
+    public function download() : bool
     {
         $this->to = 'browser';
         return $this->write();
     }
-    public function save()
+    public function save() : bool
     {
         $this->to = 'file';
         return $this->write();
     }
-    public function close()
+    public function close() : void
     {
         if($this->reader)
             $this->reader->close();
@@ -175,11 +178,11 @@ class Excel
     {
         $this->close();
     }
-    public function error()
+    public function error() : string
     {
         return $this->error;
     }
-    private function write()
+    private function write() : bool
     {
         try
         {
