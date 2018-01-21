@@ -2,10 +2,12 @@
 namespace Muyu;
 class Command
 {
+    private $config;
     private $host;
     private $username;
     private $password;
     private $options;
+    private $dir;
 
     private function command4OneParam(array $argv) : void
     {
@@ -88,6 +90,7 @@ class Command
     private function downloadMuyuJson(string $file = null) : void
     {
         $file = $file ?? $this->readLine('muyuJsonName');
+
         $username = $this->username ?? $this->readLine('username');
         $password = $this->password ?? $this->password('password');
         $override = $this->optHas('f');
@@ -300,35 +303,51 @@ class Command
     private function mailList(int $days = null) : void
     {
         $days = intval($days ?? $this->readLine('list mails before days (0)'));
-        $pop = new POP3();
-        $mails = $pop->after(date('Y-m-d 00:00:00', strtotime('-' . $days . ' days')))->mails(false);
-        $index = 0;
+        $config = $this->config->get('pop3');
+        if(isset($config['path']))
+            $config['path'] =  $this->dir . '/' . $config['path'];
+        $pop = new POPStore('', false);
+        $pop->init($config);
+        $mails = $pop->mailsInDate(date('Y-m-d 00:00:00', strtotime('-' . $days . ' days')), Tool::date());
         foreach($mails as $mail)
-            echo PHP_EOL . $index++ . ': ' . $mail['writer'] . '  ' . $mail['subject'] . PHP_EOL . $mail['from'] . '  ' . $mail['date'] . PHP_EOL;
+            echo PHP_EOL . $mail->id . ': ' . $mail->content->writer . '  ' . $mail->content->subject . PHP_EOL . $mail->content->from . '  ' . $mail->content->date . PHP_EOL;
         if(empty($mails))
             echo 'no new mail' . PHP_EOL;
     }
-    private function mailRead(int $index = null, bool $receiveFile = false) : void
+    private function mailRead(int $id = null, bool $getAttach = false) : void
     {
-        $index = intval($index ?? $this->readLine('the index of mail to read (0)'));
-        $pop = new POP3(['path' => $receiveFile ? 'mailAttachments' : null]);
-        $mail = $pop->get($index);
+        $id = intval($id ?? $this->readLine('the index of mail to read (0)'));
+        $config = $this->config->get('pop3');
+        if(isset($config['path']))
+            $config['path'] =  $this->dir . '/' . $config['path'];
+        $pop = new POPStore('', false);
+        $pop->init($config);
+        $mail = $pop->getMail($id);
         if(!$mail)
             echo 'mail not found';
         else
+        {
+            $attachments = [];
+            foreach ($mail->file as $file)
+                $attachments[] = $file->name;
             echo PHP_EOL .
-                'Subject: ' . $mail['subject'] . PHP_EOL .
-                'From:    ' . $mail['writer'] . '<' . $mail['from'] . '>' . PHP_EOL .
-                'Date:    ' . $mail['date'] . PHP_EOL .
-                'Content: ' . $mail['text'] . PHP_EOL . PHP_EOL .
-                'Attachments:' . join(', ', $mail['file']) . PHP_EOL;
+                'Subject: ' . $mail->subject . PHP_EOL .
+                'From:    ' . $mail->writer . '<' . $mail->from . '>' . PHP_EOL .
+                'Date:    ' . $mail->date . PHP_EOL .
+                'Content: ' . $mail->text . PHP_EOL . PHP_EOL .
+                'Attachments: ' . join(', ', $attachments) . PHP_EOL;
+        }
+        if($getAttach)
+            foreach ($mail->file as $file)
+                copy($this->dir . '/' . $file->path(), $file->name);
     }
     private function mailDel(int $index = null) : void
     {
-        $index = intval($index ?? $this->readLine('the index of mail to delete (0)'));
-        $pop = new POP3();
-        if(!$pop->del($index))
-            echo 'mail not found' . PHP_EOL;
+        echo 'deleting mail is not supported now';
+//        $index = intval($index ?? $this->readLine('the index of mail to delete (0)'));
+//        $pop = new POP3();
+//        if(!$pop->del($index))
+//            echo 'mail not found' . PHP_EOL;
     }
     private function mailSend() : void
     {
@@ -338,15 +357,17 @@ class Command
         $smtp = new SMTP();
         echo $smtp->subject($subject)->html('<p>' . $content . '</p>')->text($content)->to($to)->send() ? '' : 'mail sned fail' . PHP_EOL;
     }
-    public function __construct(string $host, string $username, string $password)
+    public function __construct(string $host = null, string $username = null, string $password = null)
     {
         $this->host = $host;
         $this->username = $username;
         $this->password = $password;
+        $this->config = new Config();
     }
-    public function read(array $argv, array $options)
+    public function read(array $argv, array $options, string $dir)
     {
         array_shift($argv);
+        $this->dir = $dir;
         foreach($options as $option)
             array_shift($argv);
         $this->options = $options;

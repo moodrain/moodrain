@@ -16,6 +16,27 @@ class Wechat
     private $isResponsed = false;
     private $error;
 
+    public function __construct(string $muyuConfig = 'wechat', bool $init = true)
+    {
+        $this->muyuConfig = $muyuConfig;
+        if($init)
+            $config = new Config();
+        $this->init($config($this->muyuConfig));
+    }
+    public function init(array $config) : void
+    {
+        foreach ($config as $key => $val)
+            $this->$key = $val;
+        $this->template =
+            "<xml>
+            <ToUserName><![CDATA[%s]]></ToUserName>
+            <FromUserName><![CDATA[%s]]></FromUserName>
+            <CreateTime>%s</CreateTime>
+            <MsgType><![CDATA[%s]]></MsgType>
+            <Content><![CDATA[%s]]></Content>
+            <FuncFlag>0</FuncFlag>
+        </xml>";
+    }
     public function response() : void
     {
         foreach($this->handler as $handler)
@@ -123,26 +144,6 @@ class Wechat
             return false;
         }
         return $data;
-    }
-    public function __construct(string $muyuConfig = 'wechat')
-    {
-        $this->muyuConfig = $muyuConfig;
-        $config = new Config();
-        $this->init($config($this->muyuConfig));
-        $this->template =
-        "<xml>
-            <ToUserName><![CDATA[%s]]></ToUserName>
-            <FromUserName><![CDATA[%s]]></FromUserName>
-            <CreateTime>%s</CreateTime>
-            <MsgType><![CDATA[%s]]></MsgType>
-            <Content><![CDATA[%s]]></Content>
-            <FuncFlag>0</FuncFlag>
-        </xml>";
-    }
-    public function init(array $config) : void
-    {
-        foreach ($config as $key => $val)
-            $this->$key = $val;
     }
     public function authServer() : void
     {

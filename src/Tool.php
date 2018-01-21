@@ -4,6 +4,10 @@ use \PDO;
 
 class Tool
 {
+    public static function ignoreCn(String $str)
+    {
+        return preg_replace('/([\x80-\xff]*)/i','',$str);
+    }
     public static function validate(string $type, $value) : bool
     {
         switch($type)

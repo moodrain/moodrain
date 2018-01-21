@@ -15,12 +15,13 @@ class FTP
     private $server;
     private $error;
 
-    public function __construct(string $muyuConfig = 'ftp')
+    public function __construct(string $muyuConfig = 'ftp', bool $init = true)
     {
         $config = new Config();
-        $this->init($config($muyuConfig));
+        if($init)
+            $this->init($config($muyuConfig));
     }
-    public function init(array $config  = []) : FTP
+    public function init(array $config  = [])
     {
         foreach($config as $key => $val)
             $this->$key = $val;
@@ -29,7 +30,7 @@ class FTP
         $this->ssl = false;
         $this->conn = $this->ssl ? ftp_ssl_connect($this->host, $this->port) : ftp_connect($this->host, $this->port);
         ftp_login($this->conn, $this->user, $this->pass);
-        return $this;
+        return $this->conn ? $this : false;
     }
     public function prefix(string $prefix = null)
     {

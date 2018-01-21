@@ -8,49 +8,62 @@ class POP3
     private $user;
     private $pass;
     private $path;
+    private $attachPath;
     private $box;
+    private $list = [];
     private $mails = [];
     private $after;
+    private $getAttach;
+    private $error = '';
 
-    public function __construct(string $muyuConfig = 'pop3')
+    public function __construct(string $muyuConfig = 'pop3', bool $init = true)
     {
         $config = new Config();
-        $this->init($config($muyuConfig));
+        if($init)
+            $this->init($config($muyuConfig));
     }
     public function init(array $config)
     {
         foreach ($config as $key => $val)
             $this->$key = $val;
+        $this->error = 'box not init';
+        return $this;
+    }
+    public function initBox(bool $getAttach = false) : bool
+    {
+        $this->error = '';
+        $this->getAttach = $getAttach;
         Tool::timezone($config['timezone'] ?? 'PRC');
         $host = '{'. $this->host . ':' . $this->port . '/pop/ssl}INBOX';
-        if($this->path && !file_exists($this->path))
-            mkdir($this->path);
-        $this->box = new \PhpImap\Mailbox($host, $this->user, $this->pass, $this->path);
-        foreach(array_reverse($this->box->getMailsInfo($this->box->searchMailbox())) as $mailInfo)
+        $this->attachPath = $this->path . '/attach';
+        if(!file_exists($this->attachPath))
+            @mkdir($this->attachPath);
+        if($getAttach && $this->attachPath && !file_exists($this->attachPath))
         {
-            $mail = [];
-            $mail['id'] = $mailInfo->uid;
-            $mail['subject'] = $mailInfo->subject;
-            $mail['writer'] = explode(' <', $mailInfo->from)[0] ?? 'writer';
-            $mail['from'] = substr(explode(' <', $mailInfo->from)[1] ?? 'fromm', 0, -1);
-            $mail['to'] = $mailInfo->to;
-            $mail['date'] = date('Y-m-d H:i:s', $mailInfo->udate);
-            $this->mails[] = $mail;
+            $this->error = 'path not found';
+            return false;
         }
-        return $this;
+        $this->box = new \PhpImap\Mailbox($host, $this->user, $this->pass, $getAttach ? $this->attachPath : null);
+        $this->list = array_reverse($this->box->searchMailbox('ALL'));
+        return true;
     }
     public function list() : array
     {
-        return $this->mails;
+        return $this->list;
     }
-    public function mails(bool $read = true) : array
+    public function mails(bool $attach = false) : array
     {
         $news = [];
-        for($i = 0;$i < count($this->mails);$i++)
+        foreach ($this->list as $mailId)
         {
-            if(isset($this->after) && $this->mails[$i]['date'] <= $this->after)
+            $mail = null;
+            if(isset($this->mails[$mailId]))
+                $mail = $this->mails[$mailId];
+            else
+                $this->mails[$mailId] = $mail = $this->get($mailId, $attach);
+            if(isset($this->after) && $mail <= $this->after)
                 break;
-            $news[] = $this->mails[$i] = $read ? $this->get($i) : $this->mails[$i];
+            $news[] = $mail;
         }
         return $news;
     }
@@ -68,49 +81,78 @@ class POP3
         else
             return $this->after;
     }
-    public function get(int $index = 0) : array
+    public function get(int $id)
     {
-        if(!($id = $this->mails[$index]['id'] ?? null))
-            return null;
-        $mailInfo = $this->box->getMail($id);
-        $mail = [];
-        $mail['id'] = $id;
-        $mail['subject'] = $mailInfo->subject;
-        $mail['writer'] = $mailInfo->fromName;
-        $mail['from'] = $mailInfo->fromAddress;
-        $mail['to'] = $mailInfo->toString;
-        $mail['date'] = $mailInfo->date;
-        $mail['text'] = $mailInfo->textPlain;
-        $mail['html'] = $mailInfo->textHtml;
+        if(!in_array($id, $this->list))
+            return [];
+        $mailInfo = @$this->box->getMail($id);
+        $mail = new \stdClass();
+        $mail->id = $id;
+        $mail->subject = $mailInfo->subject;
+        $mail->writer = $mailInfo->fromName;
+        $mail->from = $mailInfo->fromAddress;
+        $mail->to = $mailInfo->toString;
+        $mail->date = $mailInfo->date;
+        $mail->text = $mailInfo->textPlain;
+        $mail->html = $mailInfo->textHtml;
         $files = [];
-        $filesInfo = $mailInfo->getAttachments();
-        foreach($filesInfo as $fileInfo)
+        $filesInfo = @$mailInfo->getAttachments();
+        if($this->getAttach)
         {
-            if($this->path)
+            foreach($filesInfo as $fileInfo)
             {
-                $dir = $this->path . '/' . $mail['id'];
-                $old = $this->path . '/' . $mail['id'] . '_' . $fileInfo->id . '_.' . Tool::ext($fileInfo->name);
+
+                $dir = $this->attachPath . '/' . $mail->id;
+                $old = $this->attachPath . '/' . $mail->id . '_' . $fileInfo->id . '_' . Tool::ignoreCn($fileInfo->name);
                 $new = $dir . '/' . $fileInfo->name;
                 if(!file_exists($dir))
-                    mkdir($dir);
-                rename($old, $new);
+                {
+                    @mkdir($dir);
+                    if(!file_exists($old))
+                    {
+                        $this->error = 'attach remove error';
+                        return false;
+                    }
+                }
+                @rename($old, $new);
+                $files[] = $fileInfo->name;
             }
-            $files[] = $fileInfo->name;
         }
-        $mail['file'] = $files;
+        $mail->file = $files;
         return $mail;
     }
-    public function del(int $index) : bool
+    public function del(int $id) : bool
     {
-        if(!($id = $this->mails[$index]['id'] ?? null))
+        if(!in_array($id, $this->list))
+        {
+            $this->error = 'mail not found';
             return false;
-        $id = $this->mails[$index]['id'];
+        }
+        if(isset($this->mails[$id]))
+            $this->mails[$id] = null;
         $this->box->deleteMail($id);
         return true;
     }
+    public function path() : string
+    {
+        return $this->path;
+    }
+    public function attachPath() : string
+    {
+        return $this->attachPath;
+    }
+    public function box()
+    {
+        return $this->box;
+    }
     public function close() : void
     {
-        $this->box->disconnect();
+        if($this->box)
+            $this->box->disconnect();
+    }
+    public function error()
+    {
+        return $this->error;
     }
     public function __destruct()
     {

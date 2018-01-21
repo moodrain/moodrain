@@ -18,10 +18,11 @@ class SMTP
     private $text;
     private $mailer;
 
-    public function __construct(string $muyuConfig = 'smtp')
+    public function __construct(string $muyuConfig = 'smtp', bool $init = true)
     {
         $config = new Config();
-        $this->init($config($muyuConfig));
+        if($init)
+            $this->init($config($muyuConfig));
     }
     public function init(array $config)
     {

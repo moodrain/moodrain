@@ -5,3 +5,4 @@ index.php
 composer.lock
 Caddyfile
 /config/
+/storage/
