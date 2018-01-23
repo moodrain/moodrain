@@ -213,6 +213,5 @@ class Wechat
         $tmpArr = [$this->token, $timestamp, $nonce];
         sort($tmpArr, SORT_STRING);
         return sha1(implode($tmpArr)) == $signature;
-
     }
 }

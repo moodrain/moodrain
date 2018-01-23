@@ -4,6 +4,16 @@ use \PDO;
 
 class Tool
 {
+    public static function uuid()
+    {
+        return sprintf( '%04x%04x-%04x-%04x-%04x-%04x%04x%04x',
+            mt_rand( 0, 0xffff ), mt_rand( 0, 0xffff ),
+            mt_rand( 0, 0xffff ),
+            mt_rand( 0, 0x0fff ) | 0x4000,
+            mt_rand( 0, 0x3fff ) | 0x8000,
+            mt_rand( 0, 0xffff ), mt_rand( 0, 0xffff ), mt_rand( 0, 0xffff )
+        );
+    }
     public static function ignoreCn(String $str)
     {
         return preg_replace('/([\x80-\xff]*)/i','',$str);
@@ -170,12 +180,14 @@ class Tool
     {
         return explode('.', basename($filename))[1] ?? null;
     }
-    public static function gmt() : string
+    public static function gmt(int $time = null) : string
     {
-        return gmdate('D, d M Y H:i:s T');
+        $time = $time ?? time();
+        return gmdate('D, d M Y H:i:s T', $time);
     }
-    public static function gmt_iso8601($time) : string
+    public static function gmt_iso8601(int $time = null) : string
     {
+        $time = $time ?? time();
         $dtStr = date("c", $time);
         $myDatetime = new \DateTime($dtStr);
         $expiration = $myDatetime->format(\DateTime::ISO8601);
