@@ -16,7 +16,7 @@ class POP3
     private $getAttach;
     private $error = '';
 
-    public function __construct(string $muyuConfig = 'pop3', bool $init = true)
+    public function __construct(string $muyuConfig = 'pop3.default', bool $init = true)
     {
         $config = new Config();
         if($init)
@@ -26,6 +26,7 @@ class POP3
     {
         foreach ($config as $key => $val)
             $this->$key = $val;
+        $this->pass = base64_decode($config['pass'] ?? '');
         $this->error = 'box not init';
         return $this;
     }
@@ -34,13 +35,16 @@ class POP3
         $this->error = '';
         $this->getAttach = $getAttach;
         Tool::timezone($config['timezone'] ?? 'PRC');
-        $host = '{'. $this->host . ':' . $this->port . '/pop/ssl}INBOX';
+        $host = '{'. $this->host . ':' . ($this->port ?? 995) . '/pop/ssl}INBOX';
         $this->attachPath = $this->path . '/attach';
-        if(!file_exists($this->attachPath))
-            @mkdir($this->attachPath);
-        if($getAttach && $this->attachPath && !file_exists($this->attachPath))
+        if(!file_exists($this->path) && !@mkdir($this->path))
         {
-            $this->error = 'path not found';
+            $this->error = 'mail dir not found';
+            return false;
+        }
+        if($getAttach && $this->attachPath && !@mkdir($this->attachPath))
+        {
+            $this->error = 'attach dir not found';
             return false;
         }
         $this->box = new \PhpImap\Mailbox($host, $this->user, $this->pass, $getAttach ? $this->attachPath : null);

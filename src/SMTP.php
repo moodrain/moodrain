@@ -18,7 +18,7 @@ class SMTP
     private $text;
     private $mailer;
 
-    public function __construct(string $muyuConfig = 'smtp', bool $init = true)
+    public function __construct(string $muyuConfig = 'smtp.default', bool $init = true)
     {
         $config = new Config();
         if($init)
@@ -28,6 +28,7 @@ class SMTP
     {
         foreach($config as $key => $val)
             $this->$key = $val;
+        $this->pass = base64_decode($config['pass'] ?? '');
         return $this;
     }
     public function from($mail, $name)
@@ -81,8 +82,8 @@ class SMTP
         $mail->Host = $this->host;
         $mail->Username = $this->user;
         $mail->Password = $this->pass;
-        $mail->SMTPSecure = $this->encrypt;
-        $mail->Port = $this->port;
+        $mail->SMTPSecure = $this->encrypt ?? 'ssl';
+        $mail->Port = $this->port ?? 465;
         $mail->setFrom($this->from, $this->name);
         foreach($this->to as $to)
             $mail->addAddress($to);

@@ -14,4 +14,4 @@ $user = $config('command.user', null);
 $pass = $config('command.pass', null) ? base64_decode($config('command.pass')) : null;
 $command = new Muyu\Command($host, $user, $pass);
 $option = getopt($optionFormat);
-@$command->read($argv, $option, __DIR__);
+@$command->read($argv, $option, str_replace("\\", '/', __DIR__));

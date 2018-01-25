@@ -15,6 +15,9 @@
         "box/spout": "^2.7"
     },
     "autoload": {
-        "psr-4": {"Muyu\\": "src/"}
+        "psr-4": {
+            "Muyu\\": "src/",
+            "App\\": "src/"
+        }
     }
 }

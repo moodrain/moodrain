@@ -69,6 +69,10 @@ class Config
     {
         self::$path = $path;
     }
+    public static function getPath() : string
+    {
+        return self::$path;
+    }
     public function init(array $config = null) : Config
     {
         if($config === null)

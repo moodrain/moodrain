@@ -1,10 +1,50 @@
 <?php
 namespace Muyu;
+use Muyu\Support\Seeder;
 use \PDO;
 
 class Tool
 {
-    public static function uuid()
+    public static function cors() : void
+    {
+        header('Access-Control-Allow-Origin: *');
+    }
+    public static function route() : void
+    {
+        $router = Tool::router();
+        $router->route();
+    }
+    public static function router()
+    {
+        return new class
+        {
+            public function route(string $url = null)
+            {
+                $url = $url ?? $_SERVER['REQUEST_URI'];
+                $request = explode('/', $url);
+                array_shift($request);
+                echo $this->handle($request);
+            }
+            private function handle(array $url)
+            {
+                if(count($url) == 1)
+                    array_unshift($url, 'Index');
+                $controller = ucfirst($url[0]);
+                $action = Tool::hump(explode('?', $url[1])[0]);
+                $action = $action == '' ? 'index' : $action;
+                define('Controller', $controller);
+                define('Action', $action);
+                $class = 'App\Controller\\' . $controller;
+                if(!class_exists($class))
+                    return Tool::res(404,'页面不存在', null, 404);
+                $obj = new $class;
+                if(!method_exists ($obj, $action))
+                    return Tool::res(404,'页面不存在', null, 404);
+                return call_user_func([$obj, $action]);
+            }
+        };
+    }
+    public static function uuid() : string
     {
         return sprintf( '%04x%04x-%04x-%04x-%04x-%04x%04x%04x',
             mt_rand( 0, 0xffff ), mt_rand( 0, 0xffff ),
@@ -14,7 +54,7 @@ class Tool
             mt_rand( 0, 0xffff ), mt_rand( 0, 0xffff ), mt_rand( 0, 0xffff )
         );
     }
-    public static function ignoreCn(String $str)
+    public static function ignoreCn(String $str) : string
     {
         return preg_replace('/([\x80-\xff]*)/i','',$str);
     }
@@ -29,6 +69,7 @@ class Tool
             case 'int'   : return filter_var($value, FILTER_VALIDATE_INT);
             case 'float' : return filter_var($value, FILTER_VALIDATE_FLOAT);
         }
+        return false;
     }
     public static function timezone(string $timezone = 'PRC') : void
     {
@@ -48,21 +89,21 @@ class Tool
             return strtoupper($matches[2]);
         }, $str);
     }
-    public static function pdo(array $conf = null, array $attr = [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]) : PDO
+    public static function pdo(array $conf = null, array $attr = [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION], string $muyuConfig = 'database.default') : PDO
     {
         $config  = new Config();
-        $host = $conf['host'] ?? $config('database.host');
-        $type = $conf['type'] ?? $config('database.type');
-        $db   = $conf['db']   ?? $config('database.db');
-        $user = $conf['user'] ?? $config('database.user');
-        $pass = $conf['pass'] ?? $config('database.pass');
+        $host = $conf['host'] ?? $config( $muyuConfig . '.host');
+        $type = $conf['type'] ?? $config($muyuConfig . '.type');
+        $user = $conf['user'] ?? $config($muyuConfig . '.user');
+        $pass = $conf['pass'] ?? base64_decode($config($muyuConfig . '.pass'));
+        $db   = $conf['db']   ?? $config($muyuConfig . '.db');
         return new PDO("$type:host=$host;dbname=$db;charset=utf8", $user, $pass, $attr);
     }
-    public static function log($log) : void
+    public static function log($log, $muyuConfig = 'log') : void
     {
-        $file = fopen('log.txt', 'a');
-        if(!is_string($log))
-            $log = json_encode($log, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+        $config = new Config();
+        $file = fopen($config($muyuConfig . '.file'), 'a');
+        $log = json_encode($log, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
         fwrite($file, $log . PHP_EOL);
         fclose($file);
     }
@@ -121,56 +162,9 @@ class Tool
         $str = substr($str, $st + strlen($kw1), $ed - $st - strlen($kw1));
         return $str;
     }
-    public static function seed(string $seeder) : string
+    public static function seeder(string $seeder = null)
     {
-        switch($seeder)
-        {
-            case 'name' :
-            {
-                $firstName = ['王','李','张','刘','陈','杨','黄','赵','吴','周','徐','孙','马','朱','胡','郭','何','高','林','郑','谢','罗','梁','宋','唐','许','韩','冯','邓','曹','彭','曾','肖','田','董','袁','潘','于','蒋','蔡','余','杜','叶','程','苏','魏','吕','丁','任','沈','姚','卢','姜','崔','钟','谭','陆','汪','范','金','石','廖','贾','夏','韦','付','方','白','邹','孟','熊','秦','邱','江','尹','薛','闫','段','雷','侯','龙','史','陶','黎','贺','顾','毛','郝','龚','邵','万','钱','严','覃','武','戴','莫','孔','向','汤'];
-                 $secondName = ['家乐','志明','展鸿','家意','子荣','子涵','子琴','志鹏','子意','家康','永明','永康','志宁','志成','子轩','志颖','佳颖','佳乐','杰','嘉达','云亮','志伟','文清','文州','文洲','敬言','荣兴','烟柔','柔','建国','果','一帆','一新','心仪','炽诚','文豪','文浩'];
-                return $firstName[array_rand($firstName)] . $secondName[array_rand($secondName)];
-            }
-            case 'major' :
-            {
-                 $majors = [
-                    '计算机科学与技术','药学','药物分析','药物化学','临床药学','预防医学','中医学','中药学','电子信息工程','生物医学工程','生物技术','护理学','英语','健康服务与管理','康复治疗学','生物制药','中药制药',
-                ];
-                return $majors[array_rand($majors)];
-            }
-            case 'school' :
-            {
-                 $schools = [
-                    '药学院','公共卫生学院','临床医学院','中药学院','医药信息工程学院','生命科学与生物制药学院','护理学院','外国语学院','健康学院'
-                ];
-                return $schools[array_rand($schools)];
-            }
-            case 'elect' :
-            {
-                $elects = [
-                    '骨骼健康学','名著名片欣赏','生物技术与现代生活','大学生学术毕业论文写作技巧','生物技术的法律法规','奇妙的生物技术','自我控制能力的奥秘','大学生财商教育','Photoshop cs2入门与提高','客家文化','大学语文','影视鉴赏','大学生书法技能','美术鉴赏','舞蹈鉴赏','音乐鉴赏','戏剧鉴赏','文学技巧与欣赏','大学美育'
-                ];
-                return $elects[array_rand($elects)];
-            }
-            case 'room' :
-            {
-                $buildings = ['A','B','C','D','E','F','G','H'];
-                $floor = mt_rand(1,7);
-                $number = mt_rand(1, 30);
-                $number = $number < 10 ? '0' . $number : $number;
-                return $buildings[array_rand($buildings)] . '-' . $floor . $number;
-            }
-            case 'ip' :
-            {
-                $ipType = mt_rand(1, 2);
-                if($ipType == 1)
-                    $ip =  mt_rand(11, 171);
-                else if($ipType == 2)
-                    $ip = mt_rand(193, 254);
-                $ip = $ip . '.' . mt_rand(1, 254) . '.' . mt_rand(1, 254) . '.' . mt_rand(1, 254);
-                return $ip;
-            }
-        }
+        return new Seeder($seeder);
     }
     public static function isSet($key, array $array) : bool
     {

@@ -15,7 +15,7 @@ class FTP
     private $server;
     private $error;
 
-    public function __construct(string $muyuConfig = 'ftp', bool $init = true)
+    public function __construct(string $muyuConfig = 'ftp.default', bool $init = true)
     {
         $config = new Config();
         if($init)

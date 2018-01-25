@@ -1,6 +1,8 @@
 <?php
 namespace Muyu;
 
+use Muyu\Support\XML;
+
 class Curl
 {
     private $curl;

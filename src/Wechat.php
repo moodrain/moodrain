@@ -1,5 +1,7 @@
 <?php
 namespace Muyu;
+use Muyu\Support\XML;
+
 class Wechat
 {
     private $appId;
@@ -16,7 +18,7 @@ class Wechat
     private $isResponsed = false;
     private $error;
 
-    public function __construct(string $muyuConfig = 'wechat', bool $init = true)
+    public function __construct(string $muyuConfig = 'wechat.default', bool $init = true)
     {
         $this->muyuConfig = $muyuConfig;
         if($init)
@@ -164,13 +166,11 @@ class Wechat
     }
     public function isSubscribeEvent() : bool
     {
-        if($this->receiveData['msgType'] == 'event' && $this->receiveData['event'] == 'subscribe')
-            return true;
+        return $this->receiveData['msgType'] == 'event' && $this->receiveData['event'] == 'subscribe';
     }
     public function isUnSubscribeEvent() : bool
     {
-        if($this->receiveData['msgType'] == 'event' && $this->receiveData['event'] == 'unsubscribe')
-            return true;
+        return $this->receiveData['msgType'] == 'event' && $this->receiveData['event'] == 'unsubscribe';
     }
     public function isTextMsg() : bool
     {

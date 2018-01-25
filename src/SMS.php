@@ -20,7 +20,7 @@ class SMS
     private $version;
     private $error;
 
-    public function __construct(string $muyuConfig = 'sms', $init = true)
+    public function __construct(string $muyuConfig = 'sms.default', $init = true)
     {
         $config = new Config();
         if($init)

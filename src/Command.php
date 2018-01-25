@@ -303,7 +303,7 @@ class Command
     private function mailList(int $days = null) : void
     {
         $days = intval($days ?? $this->readLine('list mails before days (0)'));
-        $config = $this->config->get('pop3');
+        $config = $this->config->get('pop3.default');
         if(isset($config['path']))
             $config['path'] =  $this->dir . '/' . $config['path'];
         $pop = new POPStore('', false);
@@ -317,7 +317,7 @@ class Command
     private function mailRead(int $id = null, bool $getAttach = false) : void
     {
         $id = intval($id ?? $this->readLine('the index of mail to read (0)'));
-        $config = $this->config->get('pop3');
+        $config = $this->config->get('pop3.default');
         if(isset($config['path']))
             $config['path'] =  $this->dir . '/' . $config['path'];
         $pop = new POPStore('', false);
@@ -339,7 +339,7 @@ class Command
         }
         if($getAttach)
             foreach ($mail->file as $file)
-                copy($this->dir . '/' . $file->path(), $file->name);
+                @copy($file->path(), $file->name);
     }
     private function mailDel(int $index = null) : void
     {

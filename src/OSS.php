@@ -18,7 +18,7 @@ class OSS
     private $pubKeyUrl = '';
     private $isVerified = false;
 
-    public function __construct(string $muyuConfig = 'oss', bool $init = false)
+    public function __construct(string $muyuConfig = 'oss.default', bool $init = true)
     {
         $config = new Config();
         if($init)

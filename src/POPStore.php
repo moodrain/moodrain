@@ -8,7 +8,7 @@ class POPStore
     private $pop3;
     private $error = '';
 
-    public function __construct(string $muyuConfig = 'pop3', bool $init = true)
+    public function __construct(string $muyuConfig = 'pop3.default', bool $init = true)
     {
         $config = new Config();
         if($init)
@@ -18,7 +18,8 @@ class POPStore
     {
         foreach($config as $key => $val)
             $this->$key = $val;
-        $this->pop3 = new POP3();
+        $this->pop3 = new POP3('pop3.default', false);
+        $this->pop3->init($config);
         $this->pop3->initBox(true);
         $this->attachPath = $this->pop3->attachPath();
         $this->initList();
@@ -87,13 +88,13 @@ class POPStore
                     return $this;
                 }
             };
-            $file = $aFile->create($id, $this->attachPath, $file);
+            $file = $aFile->create($mail->id, $this->attachPath, $file);
         }
         return $mail;
     }
     private function initList() : void
     {
-        if(!file_exists($this->path))
+        if(!file_exists($this->path) && !@mkdir($this->path))
         {
             $this->error = 'mail dir not found';
             return;
@@ -125,7 +126,7 @@ class POPStore
             $after = 0;
             $id = 1;
         }
-        else if(count($this->list) == count($this->pop3->list())) {}
+        else if(count($this->list) == count($this->pop3->list())) {echo 1;}
         else
         {
             usort($this->list, [$this, 'sortMailByDate']);
@@ -155,7 +156,7 @@ class POPStore
     private function saveMail(string $filename, $content) : void
     {
         $attachDir = $this->path . '/attach';
-        if(!file_exists($attachDir))
+        if(!file_exists($attachDir) && !@mkdir($attachDir))
             $this->error = 'attach dir not found';
         file_put_contents($this->path . '/' . $filename, json_encode($content, 128|256));
     }
