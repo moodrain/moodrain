@@ -1,5 +1,6 @@
 <?php
 namespace Muyu;
+
 class POPStore
 {
     private $path;

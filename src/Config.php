@@ -146,6 +146,8 @@ class Config
     }
     public function get(string $key)
     {
+        if($key === '')
+            return null;
         $raw = $key;
         $config = &self::$config;
         $keys = explode('.', $key);

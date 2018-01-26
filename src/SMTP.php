@@ -68,6 +68,10 @@ class SMTP
         $this->text = $text;
         return $this;
     }
+    public function content($content)
+    {
+        return $this->html('<p>' . $content . '</p>')->text(strip_tags($content));
+    }
     public function debug()
     {
         $mail = new PHPMailer();
