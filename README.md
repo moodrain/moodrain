@@ -34,7 +34,7 @@ moodrain.cn
 
 一些工具采用简单、链式接口，几乎不用文档，根据IDE提示即可使用，例如发送请求
 
-		$rs = (new \Muyu\Curl())->url('https://www.baidu.cn/s')->query(['wd' => 'moodrain.cn', 'ie' => 'UTF-8'])->get();
+	$rs = (new \Muyu\Curl())->url('https://www.baidu.cn/s')->query(['wd' => 'moodrain.cn', 'ie' => 'UTF-8'])->get();
 更多工具和使用方法请阅读Wiki
 
 
