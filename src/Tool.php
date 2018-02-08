@@ -74,7 +74,7 @@ class Tool
         $db   = $conf['db']   ?? $config($muyuConfig . '.db');
         return new PDO("$type:host=$host;dbname=$db;charset=utf8", $user, $pass, $attr);
     }
-    public static function log($log, $muyuConfig = 'log') : void
+    public static function log($log, $muyuConfig = 'log.default') : void
     {
         $config = new Config();
         $file = fopen($config($muyuConfig . '.file'), 'a');
