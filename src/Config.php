@@ -47,7 +47,7 @@ namespace Muyu;
 class Config
 {
     private static $config;
-    private static $path = 'muyu.json';
+    private static $path = './muyu.json';
     public function __construct(array $config = null)
     {
         if(!self::$config)
