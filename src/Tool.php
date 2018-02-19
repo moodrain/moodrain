@@ -74,11 +74,19 @@ class Tool
         $db   = $conf['db']   ?? $config($muyuConfig . '.db');
         return new PDO("$type:host=$host;dbname=$db;charset=utf8", $user, $pass, $attr);
     }
-    public static function log($log, $muyuConfig = 'log.default') : void
+    public static function log($log, string $muyuConfig = 'log.default') : void
     {
         $config = new Config();
         $file = fopen($config($muyuConfig . '.file'), 'a');
         $log = json_encode($log, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+        fwrite($file, $log . PHP_EOL);
+        fclose($file);
+    }
+    public static function logA(string $log, string $level = 'INFO', string $muyuConfig = 'log.default') : void
+    {
+        $config = new Config();
+        $file = fopen($config($muyuConfig . '.file'), 'a');
+        $log = Tool::date() . ' ' . $level . ': ' . $log;
         fwrite($file, $log . PHP_EOL);
         fclose($file);
     }
@@ -162,6 +170,6 @@ class Tool
         $expiration = $myDatetime->format(\DateTime::ISO8601);
         $pos = strpos($expiration, '+');
         $expiration = substr($expiration, 0, $pos);
-        return $expiration."Z";
+        return $expiration . "Z";
     }
 }

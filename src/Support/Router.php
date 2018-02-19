@@ -1,5 +1,6 @@
 <?php
 namespace Muyu\Support;
+
 class Router
 {
     public function route(string $url = null)
