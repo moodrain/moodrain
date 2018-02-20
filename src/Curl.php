@@ -16,15 +16,23 @@ class Curl
     private $result;
     private $responseType;
     private $transfer;
+    private $timeout;
+    private $retry;
+    private $retryErrorCode;
+    private $error;
 
     public function __construct(string $url = null)
     {
         $this->url = $url;
         $this->curl = curl_init();
         $this->transfer = true;
+        $this->timeout = 300;
+        $this->retryErrorCode = [28, 52];
         curl_setopt($this->curl, CURLOPT_RETURNTRANSFER, 1);
         curl_setopt($this->curl, CURLOPT_SSL_VERIFYPEER, 0);
         curl_setopt($this->curl, CURLOPT_FOLLOWLOCATION, 1);
+        curl_setopt($this->curl, CURLOPT_TIMEOUT, 300);
+        curl_setopt($this->curl, CURLOPT_CONNECTTIMEOUT, 300);
     }
     public function url(string $url) : Curl
     {
@@ -150,6 +158,38 @@ class Curl
     {
         return $this->result['content'];
     }
+    public function timeout(int $second = null)
+    {
+        if($second)
+        {
+            $this->timeout = $second;
+            curl_setopt($this->curl, CURLOPT_TIMEOUT, $second);
+            curl_setopt($this->curl, CURLOPT_CONNECTTIMEOUT, $second);
+            return $this;
+        }
+        else
+            return $this->timeout;
+    }
+    public function retry(int $times = null)
+    {
+        if($times)
+        {
+            $this->retry = $times;
+            return $this;
+        }
+        else
+            return $this->retry;
+    }
+    public function retryErrorCode($errorCode = null)
+    {
+        if($errorCode)
+        {
+            $this->retryErrorCode = is_array($errorCode) ? $errorCode : [$errorCode];
+            return $this;
+        }
+        else
+            return count($this->retryErrorCode) == 1 ? $this->retryErrorCode[0] : $this->retryErrorCode;
+    }
     public function get(bool $returnResult = true)
     {
         $this->mothod = 'GET';
@@ -238,10 +278,12 @@ class Curl
             return $this;
         }
     }
-    private function format(string $raw)
+    private function format($raw)
     {
         if($this->responseType)
             header('Content-Type: ' . $this->responseType);
+        if($raw === null || $raw === false)
+            return $raw;
         if($this->transfer)
         {
             if(in_array($this->responseType, [
@@ -258,10 +300,19 @@ class Curl
         else
             return $raw;
     }
-    private function handle($curl) : string
+    private function handle($curl)
     {
         curl_setopt($curl, CURLOPT_HEADER, 1);
         $content = curl_exec($curl);
+        $this->error = curl_errno($curl);
+        if($this->retry)
+        {
+            $times = $this->retry;
+            while($times-- > 0 && in_array(curl_errno($curl), $this->retryErrorCode))
+                $content = curl_exec($curl);
+        }
+        if($content === null || $content === false)
+            return $content;
         $response = explode("\r\n", $content);
         $headers = [];
         $headers['Set-Cookie'] = [];
@@ -314,11 +365,13 @@ class Curl
             else
                 $content .= $row . ($count == count($response) ? '' : "\r\n");
         }
-        if(!isset($headers['Status']))
-            return null;
         $this->result['header'] = $headers;
         $this->result['content'] = $content;
         return $this->content();
+    }
+    public function error()
+    {
+        return $this->error;
     }
     public function close() : void
     {

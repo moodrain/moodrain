@@ -1,6 +1,8 @@
 <?php
 namespace Muyu\Support;
 
+use Muyu\Tool;
+
 class Ali
 {
     public static function httpParam(array $params, string $accessKeySecret) : array
@@ -11,6 +13,8 @@ class Ali
                 return str_replace('%7A', '~', str_replace('*', '%2A', str_replace('+' , '%20', urlencode($str))));
             }
         };
+        if(date_default_timezone_get() != 'UTC' && isset($params['Timestamp']))
+            $params['Timestamp'] = Tool::gmt_iso8601(strtotime($params['Timestamp']), 'UTC');
         ksort($params, SORT_STRING);
         $strToSign = '';
         foreach($params as $key => $val)

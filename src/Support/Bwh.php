@@ -10,6 +10,7 @@ class Bwh
     private $key;
     private $apiUrl;
     private $error;
+
     public function __construct(string $muyuConfig = 'bwh.default', bool $init = true)
     {
         $config = new Config();
@@ -94,7 +95,12 @@ class Bwh
         $param = array_merge($param, ['veid' => $this->id, 'api_key' => $this->key]);
         $curl = new Curl();
         $rs = $curl->url($this->apiUrl . '/' . $request)->data($param)->receive('json')->post();
-        if(isset($rs['error']) && $rs['error'] != 0)
+        if(!$rs)
+        {
+            $this->error = 'request fail:' . $curl->error();
+            return false;
+        }
+        else if(isset($rs['error']) && $rs['error'] != 0)
         {
             $this->error = $rs['error'];
             return false;

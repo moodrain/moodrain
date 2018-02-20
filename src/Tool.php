@@ -162,14 +162,11 @@ class Tool
         $time = $time ?? time();
         return gmdate('D, d M Y H:i:s T', $time);
     }
-    public static function gmt_iso8601(int $time = null) : string
+    public static function gmt_iso8601(int $timestamp = null, string $timezone = null) : string
     {
-        $time = $time ?? time();
-        $dtStr = date("c", $time);
-        $myDatetime = new \DateTime($dtStr);
-        $expiration = $myDatetime->format(\DateTime::ISO8601);
-        $pos = strpos($expiration, '+');
-        $expiration = substr($expiration, 0, $pos);
-        return $expiration . "Z";
+        $date = new \DateTime(date(DATE_ATOM, $timestamp ?? time()), new \DateTimeZone(date_default_timezone_get()));
+        if($timezone)
+            $date->setTimezone(new \DateTimeZone($timezone));
+        return $date->format(DATE_ATOM);
     }
 }
