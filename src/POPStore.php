@@ -127,7 +127,7 @@ class POPStore
             $after = 0;
             $id = 1;
         }
-        else if(count($this->list) == count($this->pop3->list())) {echo 1;}
+        else if(count($this->list) == count($this->pop3->list())) {return;}
         else
         {
             usort($this->list, [$this, 'sortMailByDate']);

@@ -42,7 +42,7 @@ class POP3
             $this->error = 'mail dir not found';
             return false;
         }
-        if($getAttach && $this->attachPath && !@mkdir($this->attachPath))
+        if($getAttach && $this->attachPath && !file_exists($this->attachPath) && !@mkdir($this->attachPath))
         {
             $this->error = 'attach dir not found';
             return false;

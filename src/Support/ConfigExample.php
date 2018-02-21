@@ -5,6 +5,19 @@ class ConfigExample
 {
     public function __construct()
     {
+        $ali = $this->ali = new \stdClass();
+        $aliDef = $ali->default = new \stdClass();
+        $aliDef->accessKeyId = '';
+        $aliDef->accessKeySecret = '';
+
+        $bwh = $this->bwh = new \stdClass();
+        $bwhDef = $bwh->default = new \stdClass();
+        $bwhDef->id = '';
+        $bwhDef->key = '';
+        $bwhDef->domain = '';
+        $bwhDef->rr = '';
+        $bwhDef->mail = '';
+
         $oss = $this->oss = new \stdClass();
         $ossDef = $oss->default = new \stdClass();
         $ossDef->accessKeyId = '';
@@ -63,7 +76,7 @@ class ConfigExample
         $pop3Def->port = 995;
         $pop3Def->user = '';
         $pop3Def->pass = '';
-        $pop3Def->path = './storage/mails';
+        $pop3Def->path = './storage/mails/default';
 
         $database = $this->database = new \stdClass();
         $databaseDef = $database->default = new \stdClass();
