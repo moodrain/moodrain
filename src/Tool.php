@@ -136,14 +136,14 @@ class Tool
         }
         return $deep;
     }
-    public static function strBetween(string $str, string $kw1, string $kw2) : string
+    public static function strBetween(string $str, string $kw1, string $kw2, bool $containKw = false) : string
     {
         $st = stripos($str, $kw1);
         $ed = stripos($str, $kw2);
-        if(!$st || !$ed || $ed <= $st)
-            return '';
-        $str = substr($str, $st + strlen($kw1), $ed - $st - strlen($kw1));
-        return $str;
+        if($st === false || $ed === false || $ed <= $st)
+            return $containKw ? $kw1 . $kw2 : '';
+        $rs = substr($str, $st + strlen($kw1), $ed - $st - strlen($kw1));
+        return $containKw ? $kw1 . $rs . $kw2 : $rs;
     }
     public static function seeder(string $seeder = null)
     {

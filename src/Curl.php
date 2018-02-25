@@ -9,7 +9,7 @@ class Curl
     private $url;
     private $path;
     private $query;
-    private $mothod;
+    private $method;
     private $data;
     private $file;
     private $contentType;
@@ -19,20 +19,24 @@ class Curl
     private $timeout;
     private $retry;
     private $retryErrorCode;
+    private $proxy;
+
     private $error;
 
     public function __construct(string $url = null)
     {
         $this->url = $url;
-        $this->curl = curl_init();
         $this->transfer = true;
-        $this->timeout = 300;
+        $this->timeout = 60;
         $this->retryErrorCode = [28, 52];
+        $this->proxy = false;
+        $this->curl = curl_init();
+        curl_setopt($this->curl, CURLOPT_HEADER, 1);
         curl_setopt($this->curl, CURLOPT_RETURNTRANSFER, 1);
         curl_setopt($this->curl, CURLOPT_SSL_VERIFYPEER, 0);
         curl_setopt($this->curl, CURLOPT_FOLLOWLOCATION, 1);
-        curl_setopt($this->curl, CURLOPT_TIMEOUT, 300);
-        curl_setopt($this->curl, CURLOPT_CONNECTTIMEOUT, 300);
+        curl_setopt($this->curl, CURLOPT_TIMEOUT, 60);
+        curl_setopt($this->curl, CURLOPT_CONNECTTIMEOUT, 60);
     }
     public function url(string $url) : Curl
     {
@@ -190,9 +194,21 @@ class Curl
         else
             return count($this->retryErrorCode) == 1 ? $this->retryErrorCode[0] : $this->retryErrorCode;
     }
+    public function proxy(string $proxy)
+    {
+        if($proxy)
+        {
+            $this->proxy = $proxy;
+            return $this;
+        }
+        else
+            return $this->proxy;
+    }
+
+
     public function get(bool $returnResult = true)
     {
-        $this->mothod = 'GET';
+        $this->method = 'GET';
         curl_setopt($this->curl, CURLOPT_URL, $this->fullUrl());
         if($returnResult)
             return $this->format($this->handle($this->curl));
@@ -204,7 +220,7 @@ class Curl
     }
     public function post(bool $returnResult = true)
     {
-        $this->mothod = 'POST';
+        $this->method = 'POST';
         curl_setopt($this->curl, CURLOPT_URL, $this->fullUrl());
         curl_setopt($this->curl, CURLOPT_POST, 1);
         if($this->data)
@@ -232,7 +248,7 @@ class Curl
     }
     public function put(bool $returnResult = true)
     {
-        $this->mothod = 'PUT';
+        $this->method = 'PUT';
         curl_setopt($this->curl, CURLOPT_URL, $this->fullUrl());
         curl_setopt($this->curl, CURLOPT_PUT, 1);
         if($this->file)
@@ -254,7 +270,7 @@ class Curl
     }
     public function delete(bool $returnResult = true)
     {
-        $this->mothod = 'DELETE';
+        $this->method = 'DELETE';
         curl_setopt($this->curl, CURLOPT_URL, $this->fullUrl());
         curl_setopt($this->curl, CURLOPT_CUSTOMREQUEST, 'DELETE');
         if($returnResult)
@@ -267,7 +283,7 @@ class Curl
     }
     public function patch(bool $returnResult = true)
     {
-        $this->mothod = 'PATCH';
+        $this->method = 'PATCH';
         curl_setopt($this->curl, CURLOPT_URL, $this->fullUrl());
         curl_setopt($this->curl, CURLOPT_CUSTOMREQUEST, 'PATCH');
         if($returnResult)
@@ -302,7 +318,11 @@ class Curl
     }
     private function handle($curl)
     {
-        curl_setopt($curl, CURLOPT_HEADER, 1);
+        if($this->proxy)
+        {
+            curl_setopt($this->curl, CURLOPT_PROXYTYPE, CURLPROXY_SOCKS5_HOSTNAME);
+            curl_setopt($this->curl, CURLOPT_PROXY, $this->proxy);
+        }
         $content = curl_exec($curl);
         $this->error = curl_errno($curl);
         if($this->retry)
