@@ -139,7 +139,8 @@ class Tool
     public static function strBetween(string $str, string $kw1, string $kw2, bool $containKw = false) : string
     {
         $st = stripos($str, $kw1);
-        $ed = stripos($str, $kw2);
+        $postStr = substr($str, $st);
+        $ed = stripos($postStr, $kw2) + strlen($str) - strlen($postStr);
         if($st === false || $ed === false || $ed <= $st)
             return $containKw ? $kw1 . $kw2 : '';
         $rs = substr($str, $st + strlen($kw1), $ed - $st - strlen($kw1));
