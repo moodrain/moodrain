@@ -8,12 +8,13 @@ class FTP
     private $user;
     private $pass;
     private $ssl;
+    private $pasv;
     private $prefix;
     private $conn;
     private $force;
     private $local;
     private $server;
-    private $error;
+    private $error = '';
 
     public function __construct(string $muyuConfig = 'ftp.default', bool $init = true)
     {
@@ -27,15 +28,24 @@ class FTP
             $this->$key = $val;
         $this->pass = base64_decode($config['pass'] ?? '');
         $this->force = false;
-        $this->ssl = false;
         $this->conn = $this->ssl ? ftp_ssl_connect($this->host, $this->port) : ftp_connect($this->host, $this->port);
         ftp_login($this->conn, $this->user, $this->pass);
+        if($this->pasv)
+            ftp_pasv($this->conn, true);
+        if($this->prefix && !$this->exist($this->prefix, false))
+            $this->mkdir($this->prefix, false);
+        if(!$this->exist($this->prefix, false))
+            $this->error = 'prefix dir not exists';
         return $this->conn ? $this : false;
     }
     public function prefix(string $prefix = null)
     {
         if($prefix)
         {
+            if(!$this->exist($prefix, false))
+                $this->mkdir($prefix, false);
+            if(!$this->exist($prefix, false))
+                $this->error = 'prefix dir not exists';
             $this->prefix = $prefix;
             return $this;
         }
@@ -62,7 +72,7 @@ class FTP
         $this->force = false;
         return $this;
     }
-    public function local(string $local = null)
+    public function local($local = null)
     {
         if($local)
         {
@@ -72,7 +82,7 @@ class FTP
         else
             return $this->local;
     }
-    public function server(string $server = null)
+    public function server($server = null)
     {
         if($server)
         {
@@ -87,150 +97,107 @@ class FTP
         return $this->error;
     }
 
-    public function exist(string $file = null) : bool
+    public function exist(string $file = null, bool $withPrefix = true) : bool
     {
         $file = $file ?? $this->server;
-        $file = $this->prefix ? $this->prefix . '/' . $file : $file;
-        $result = @ftp_nlist($this->conn, $file);
-        return $result || $result === [] ? true : false;
+        $file = ($this->prefix && $withPrefix) ? ($this->prefix . $file) : $file;
+        $list = @ftp_nlist($this->conn, dirname($file));
+        $list = $list === false ? [] : $list;
+        $file = substr($file, -1) == '/' ? substr($file, 0, strlen($file) - 1) : $file;
+        return in_array($file, $list);
     }
-    public function list(string $dir = null) : array
+    public function list(string $dir = null, bool $withPrefix = true)
     {
         $dir = $dir ?? $this->server;
-        $dir = $this->prefix ? $this->prefix . '/' . $dir : $dir;
-        $files = @ftp_nlist($this->conn, $dir);
-        $files = $files == false ? [] : $files;
-        return $files;
+        $dir = ($this->prefix && $withPrefix) ? ($this->prefix . $dir) : $dir;
+        return @ftp_nlist($this->conn, $dir);
     }
-    public function get(string $file = null, string $local = null) : bool
+    public function get(string $file = null, $local = null, bool $withPrefix = true) : bool
     {
         $file = $file ?? $this->server;
-        $local = $local ?? $this->local;
-        if(!$this->exist($file))
-        {
+        $file = ($this->prefix && $withPrefix) ? $this->prefix . $file : $file;
+        $local = $local ?? $this->local ?? basename($file);
+        if(!$this->exist($file, false))
             $this->error = 'server file not found';
-            return false;
-        }
-        $file = $this->prefix ? $this->prefix . '/' . $file : $file;
-        $local = $local ?? pathinfo($file)['basename'];
-        if(is_resource($local))
+        else if(is_resource($local))
             return @ftp_fget($this->conn, $local, $file, FTP_BINARY);
-        else
-        {
-            if(!file_exists($local) || $this->force)
-                return @ftp_get($this->conn, $local, $file, FTP_BINARY);
-            else
-            {
-                $this->error = 'local file already exists';
-                return false;
-            }
-        }
+        else if(file_exists($local) && !$this->force)
+            $this->error = 'local file already exists';
+        else if(!file_exists(dirname($local)))
+            Tool::mkdir(dirname($local));
+        return $this->error === '' ? @ftp_get($this->conn, $local, $file, FTP_BINARY) : false;
     }
-    public function put(string $local = null, string $file = null) : bool
+    public function put($local = null, string $file = null, bool $withPrefix = true) : bool
     {
-        $file = $file ?? $this->server ?? $this->local;
         $local = $local ?? $this->local;
-        if($this->exist($file) && !$this->force)
-        {
-            $this->error = 'server file already exists';
-            return false;
-        }
-        $dir = pathinfo($file)['dirname'];
-        if(!$this->exist($dir))
-            $this->mkdir($dir);
-        $file = $this->prefix ? $this->prefix . '/' . $file : $file;
-        $local = $local ?? pathinfo($file)['basename'];
-        if(!file_exists($local))
-        {
-            $this->error = 'local file not found';
-            return false;
-        }
+        $file = $file ?? $this->server ?? basename($local);
+        $file = ($this->prefix && $withPrefix) ? ($this->prefix . $file) : $file;
         if(is_resource($local))
-            return @ftp_fput($this->conn, $file, $local, FTP_BINARY);
+        {
+            if($this->exist($file) && !$this->force)
+                $this->error = 'server file already exists';
+            else if(!$this->exist(dirname($file), false) &&  $this->mkdir(dirname($file), false))
+                return @ftp_fput($this->conn, $file, $local, FTP_BINARY);
+        }
         else
-            return @ftp_put($this->conn, $file, $local, FTP_BINARY);
+        {
+            if(!file_exists($local))
+                $this->error = 'local file not found';
+            else if($this->exist($file, false) && !$this->force)
+                $this->error = 'server file already exists';
+            else if(!$this->exist(dirname($file)) &&  $this->mkdir(dirname($file), false))
+                return @ftp_put($this->conn, $file, $local, FTP_BINARY);
+        }
+        return $this->error === '';
     }
-    public function mkdir(string $dir = null) : bool
+    public function mkdir(string $dir = null, bool $withPrefix = true) : bool
     {
         $dir = $dir ?? $this->server;
-        if($this->exist($dir))
-        {
-            if($this->force)
-                return true;
-            else
-            {
+        $dir = ($this->prefix && $withPrefix) ? $this->prefix . $dir : $dir;
+        if(!$this->exist(dirname($dir), false))
+            $this->mkdir(dirname($dir), false);
+        if($this->exist($dir, false) && !$this->force)
                 $this->error = 'server dir already exists';
-                return false;
-            }
-        }
         else
-        {
-            $dir = $this->prefix ? $this->prefix . '/' . $dir : $dir;
             return @ftp_mkdir($this->conn, $dir);
-        }
+        return $this->error === '';
     }
-    public function rmdir(string $dir = null) : bool
+    public function rmdir(string $dir = null, bool $withPrefix = true) : bool
     {
         $dir = $dir ?? $this->server;
-        if(!$this->exist($dir))
-        {
-            if($this->force)
-                return true;
-            else
-            {
+        $dir = ($this->prefix && $withPrefix) ? $this->prefix . $dir : $dir;
+        if(!$this->exist($dir, false) && !$this->force)
                 $this->error = 'server dir not exists';
-                return false;
-            }
-        }
         else
         {
-            $files = $this->list($dir);
+            $files = $this->list($dir, false);
             if(count($files) > 0)
             {
                 if($this->force)
                 {
                     foreach($files as $file)
-                        $rs = @ftp_delete($this->conn, $file);
-                    $dir = $this->prefix ? $this->prefix . '/' . $dir : $dir;
+                        if(!@ftp_delete($this->conn, $file))
+                            $this->rmdir($file, false);
                     if(!@ftp_rmdir($this->conn, $dir))
-                    {
-                        $this->error = 'rm dir fail, this dir has dir';
-                        return false;
-                    }
-                    else
-                        return true;
+                        $this->error = 'error in recursion rmdir';
                 }
                 else
-                {
                     $this->error = 'server dir not empty';
-                    return false;
-                }
             }
             else
-            {
-                $dir = $this->prefix ? $this->prefix . '/' . $dir : $dir;
                 return @ftp_rmdir($this->conn, $dir);
-            }
         }
+        return $this->error === '';
     }
-    public function del(string $file = null) : bool
+    public function del(string $file = null, bool $withPrefix = true) : bool
     {
         $file = $file ?? $this->server;
-        if(!$this->exist($file))
-        {
-            if($this->force)
-                return true;
-            else
-            {
-                $this->error = 'server file not found';
-                return false;
-            }
-        }
+        $file = ($this->prefix && $withPrefix) ? $this->prefix . $file : $file;
+        if(!$this->exist($file, false) && !$this->force)
+            $this->error = 'server file not found';
         else
-        {
-            $file = $this->prefix ? $this->prefix . '/' . $file : $file;
             return @ftp_delete($this->conn, $file);
-        }
+        return $this->error === '';
     }
     public function close() : void
     {

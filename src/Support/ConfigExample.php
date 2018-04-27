@@ -43,6 +43,7 @@ class ConfigExample
         $ftpDef->pass = '';
         $ftpDef->prefix = '';
         $ftpDef->ssl = false;
+        $ftpDef->pasv = false;
 
         $sms = $this->sms = new \stdClass();
         $captcha = $sms->captcha = new \stdClass();

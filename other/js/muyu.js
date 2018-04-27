@@ -311,33 +311,30 @@ function muyu_tranNum(obj,incre,time)
 }
 function muyu_totop(btn)
 {
-	btn = document.getElementById(btn);
-	var clientHeight = document.documentElement.clientHeight;
-	var timer = null;	
-	var isTop = true;
-	window.onscroll = function()
-	{
-		var osTop = document.documentElement.scrollTop || document.body.scrollTop;
-		if(osTop >= clientHeight)
-			btn.style.display = "block";
+	let timer = null
+    let isTop = true
+    btn.style.display = 'none'
+	window.addEventListener('scroll', () => {
+        let scrollTop = document.documentElement.scrollTop || document.body.scrollTop
+        let clientHeight = document.documentElement.clientHeight || document.body.scrollTop
+        if(scrollTop > clientHeight / 2)
+			btn.style.display = "block"
 		else 
-			btn.style.display = "none";
+			btn.style.display = "none"
 		if(!isTop)
-			clearInterval(timer);
-		isTop = false;
-	}
-	btn.onclick = function()
-	{
-		timer = setInterval(function()
-		{
-			var osTop = document.documentElement.scrollTop || document.body.scrollTop;
+			clearInterval(timer)
+		isTop = false
+	})
+	btn.addEventListener('click', () => {
+		timer = setInterval(() => {
+			let osTop = document.documentElement.scrollTop || document.body.scrollTop;
 			var ispeed = Math.floor(-osTop/6);
-			document.documentElement.scrollTop = document.body.scrollTop = osTop + ispeed;
-			isTop = true;
+			document.documentElement.scrollTop = document.body.scrollTop = osTop + ispeed
+			isTop = true
 			if(osTop == 0)
-				clearInterval(timer);
-		},30);
-	}
+				clearInterval(timer)
+		}, 30);
+	})
 }
 function muyu_trim(str, mode)
 {
