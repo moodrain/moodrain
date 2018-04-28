@@ -104,7 +104,7 @@ class Wechat
         }
         return $accessToken;
     }
-    public function getUserCode(bool $subscribe = true) : void
+    public function getUserCode(bool $needInfo = false) : void
     {
         if(!$this->getUserAccessTokenUrl)
         {
@@ -112,10 +112,10 @@ class Wechat
             exit();
         }
         $redirectUrl = urlencode($this->getUserAccessTokenUrl);
-        $scode = $subscribe ? 'snsapi_base' : 'snsapi_userinfo';
+        $scode = $needInfo ? 'snsapi_userinfo' : 'snsapi_base';
         header("Location: https://open.weixin.qq.com/connect/oauth2/authorize?appid={$this->appId}&redirect_uri={$redirectUrl}&response_type=code&scope={$scode}&state=muyuchengfeng#wechat_redirect");
     }
-    public function getUserAccessToken() : string
+    public function getUserAccessToken() : ?array
     {
         $code = $_GET['code'] ?? null;
         $curl = new Curl();
@@ -128,11 +128,11 @@ class Wechat
         if(isset($data['errcode']))
         {
             $this->error = $data['errcode'] . $data['errmsg'];
-            return false;
+            return null;
         }
         return $data;
     }
-    public function getUserInfo(string $openId, string $userAccessToken)
+    public function getUserInfo(string $openId, string $userAccessToken) : ?array
     {
         $curl = new Curl();
         $data = $curl->url('https://api.weixin.qq.com/sns/userinfo')->query([
@@ -143,7 +143,7 @@ class Wechat
         if(isset($data['errcode']))
         {
             $this->error = $data['errcode'] . $data['errmsg'];
-            return false;
+            return null;
         }
         return $data;
     }
