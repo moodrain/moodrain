@@ -165,7 +165,7 @@ class Config
             }
         }
     }
-    public function try(string $key, $default)
+    public function try(string $key, $default = null)
     {
         $config = &self::$config;
         $keys = explode('.', $key);

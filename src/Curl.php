@@ -1,6 +1,7 @@
 <?php
 namespace Muyu;
 
+use Muyu\Support\HttpStatus;
 use Muyu\Support\XML;
 
 class Curl
@@ -21,7 +22,7 @@ class Curl
     private $retryErrorCode;
     private $proxy;
 
-    private $error;
+    private $error = '';
 
     public function __construct(string $url = null)
     {
@@ -157,6 +158,10 @@ class Curl
     public function status() : string
     {
         return $this->result['header']['Status'];
+    }
+    public function title() : string
+    {
+        return Tool::strBetween($this->content(), '<title>', '</title>');
     }
     public function content() : string
     {
@@ -324,7 +329,7 @@ class Curl
             curl_setopt($this->curl, CURLOPT_PROXY, $this->proxy);
         }
         $content = curl_exec($curl);
-        $this->error = curl_errno($curl);
+        $this->error = curl_errno($curl) === 0 ? '' : curl_errno($curl);
         if($this->retry)
         {
             $times = $this->retry;
@@ -389,13 +394,23 @@ class Curl
         $this->result['content'] = $content;
         return $this->content();
     }
+    public function is404() : bool
+    {
+        return $this->status() == HttpStatus::_404();
+    }
+    public function ss() : Curl
+    {
+        $this->proxy('localhost:1080');
+        return $this;
+    }
     public function error()
     {
         return $this->error;
     }
     public function close() : void
     {
-        curl_close($this->curl);
+        if(is_resource($this->curl))
+            curl_close($this->curl);
     }
     public function __destruct()
     {

@@ -66,6 +66,7 @@ class SMS
         $params = Ali::httpParam($params, $this->accessKeySecret);
         $curl = new Curl();
         $rs = $curl->url($url)->data($params)->receive('json')->post();
+        $curl->close();
         if($rs['Code'] == 'OK')
             return true;
         else

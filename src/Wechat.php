@@ -125,6 +125,7 @@ class Wechat
             'code' => $code,
             'grant_type' => 'authorization_code',
         ])->receive('json')->get();
+        $curl->close();
         if(isset($data['errcode']))
         {
             $this->error = $data['errcode'] . $data['errmsg'];

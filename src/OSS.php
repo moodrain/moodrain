@@ -82,10 +82,13 @@ class OSS
     {
         $resource = '/' . $this->bucketName . '/' . ($this->prefix ? $this->prefix . '/' : '') . $file . $query;
         $url = $this->domain . '/' . ($this->prefix ? $this->prefix . '/' : '') . $file . $query;
-        return (new Curl())->url($url)->receive($receive)->header([
+        $curl = new Curl();
+        $content = $curl->url($url)->receive($receive)->header([
             'Date' => Tool::gmt(),
             'Authorization' => $this->sign('get', $resource),
         ])->get();
+        $curl->close();
+        return $content;
     }
     public function put(string $from, string $to, string $contentType = null)
     {
@@ -109,23 +112,27 @@ class OSS
                 default     : $contentType = 'application/octet-stream';
             }
         }
-        $rs = (new Curl())->url($url)->file($from)->contentType($contentType)->header([
+        $curl = new Curl();
+        $rs = $curl->url($url)->file($from)->contentType($contentType)->header([
             'Date' => Tool::gmt(),
             'Authorization' => $this->sign('put', $resource, $contentType, $contentMd5),
             'Content-Length' => filesize($from),
             'Content-Type' => $contentType,
             'Content-MD5' => $contentMd5,
         ])->put(false);
+        $curl->close();
         return $rs->status() == 'HTTP/1.1 200 OK' ? true : $rs->content();
     }
     public function del(string $file)
     {
         $resource = '/' . $this->bucketName . '/' . ($this->prefix ? $this->prefix . '/' : '') . $file;
         $url = $this->domain . '/' . ($this->prefix ? $this->prefix . '/' : '') . $file;
-        $rs = (new Curl())->url($url)->header([
+        $curl = new Curl();
+        $rs = $curl->url($url)->header([
             'Date' => Tool::gmt(),
             'Authorization' => $this->sign('delete', $resource),
         ])->delete(false);
+        $curl->close();
         return $rs->status() == 'HTTP/1.1 204 No Content' ? true : $rs->content();
     }
     public function list(string $prefix = null) : array
@@ -164,9 +171,13 @@ class OSS
             else if($result['IsTruncated'] == 'false')
                 $finish = true;
             if(!isset($result['Contents']))
+            {
+                $curl->close();
                 return [];
+            }
             $list = array_merge($list, $result['Contents']);
         }
+        $curl->close();
         return $list;
     }
     private function getPolicy(string $dir, string $callback, array $data = null) : array
@@ -205,7 +216,9 @@ class OSS
     {
         $authorization = $this->authorization;
         $pubKeyUrl = $this->pubKeyUrl;
-        $pubKey = (new Curl())->url($pubKeyUrl)->get();
+        $curl = new Curl();
+        $pubKey = $curl->url($pubKeyUrl)->get();
+        $curl->close();
         if(!$pubKey)
         {
             header("HTTP/1.1 403 Forbidden");
