@@ -112,6 +112,32 @@ class FTP
         $dir = ($this->prefix && $withPrefix) ? ($this->prefix . $dir) : $dir;
         return @ftp_nlist($this->conn, $dir);
     }
+    public function ll(string $dir = null, bool $withPrefix = true)
+    {
+        $dir = $dir ?? $this->server;
+        $dir = ($this->prefix && $withPrefix) ? ($this->prefix . $dir) : $dir;
+        $ll = @ftp_rawlist($this->conn, $dir);
+        if($ll === false)
+            return false;
+        $files = [];
+        foreach($ll as $l)
+        {
+            $l = explode(' ', $l);
+            $name = $l[count($l)-1];
+            $type = $l[0]{0};
+            switch($type)
+            {
+                case '-': $type = 'file';break;
+                case 'd': $type = 'directory';break;
+                case 'l': $type = 'link';break;
+                case 'b': $type = 'block device'; break;
+                case 'c': $type = 'character device';break;
+                default:  $type = 'unknown type';
+            }
+            $files[] = [$name, $type];
+        }
+        return $files;
+    }
     public function get(string $file = null, $local = null, bool $withPrefix = true) : bool
     {
         $file = $file ?? $this->server;
@@ -201,7 +227,8 @@ class FTP
     }
     public function close() : void
     {
-        ftp_close($this->conn);
+        if(is_resource($this->conn))
+            ftp_close($this->conn);
     }
     public function __destruct()
     {
