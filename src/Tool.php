@@ -16,6 +16,11 @@ class Tool
     {
         header('Access-Control-Allow-Origin: *');
     }
+    static function toDownload(string $filename) : void
+    {
+        header('Content-Type: application/octet-stream');
+        header('Content-Disposition: attachment; filename="' . $filename . '"');
+    }
     static function route() : void
     {
         $router = Tool::router();
@@ -100,7 +105,7 @@ class Tool
         fwrite($file, $log . PHP_EOL);
         fclose($file);
     }
-    static function res(int $code, string $msg, $data, int $status = null) : string
+    static function res(int $code = 200, string $msg = '', $data = null, int $status = null) : string
     {
         switch($status)
         {
