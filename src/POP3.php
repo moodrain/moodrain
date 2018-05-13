@@ -37,15 +37,23 @@ class POP3
         Tool::timezone($config['timezone'] ?? 'PRC');
         $host = '{'. $this->host . ':' . ($this->port ?? 995) . '/pop/ssl}INBOX';
         $this->attachPath = $this->path . '/attach';
-        if(!file_exists($this->path) && !@mkdir($this->path))
+        if(!file_exists($this->path))
         {
-            $this->error = 'mail dir not found';
-            return false;
+            Tool::mkdir($this->path);
+            if(!file_exists($this->path))
+            {
+                $this->error = 'mail dir not found';
+                return false;
+            }
         }
-        if($getAttach && $this->attachPath && !file_exists($this->attachPath) && !@mkdir($this->attachPath))
+        if($getAttach && $this->attachPath && !file_exists($this->attachPath))
         {
-            $this->error = 'attach dir not found';
-            return false;
+            Tool::mkdir($this->attachPath);
+            if(!file_exists($this->attachPath))
+            {
+                $this->error = 'attach dir not found';
+                return false;
+            }
         }
         $this->box = new \PhpImap\Mailbox($host, $this->user, $this->pass, $getAttach ? $this->attachPath : null);
         $this->list = array_reverse($this->box->searchMailbox('ALL'));
@@ -82,8 +90,7 @@ class POP3
             $this->after = $after;
             return $this;
         }
-        else
-            return $this->after;
+        return $this->after;
     }
     public function get(int $id)
     {
@@ -105,21 +112,27 @@ class POP3
         {
             foreach($filesInfo as $fileInfo)
             {
-
+                $fileName = $fileInfo->name;
+                $replace = [
+                    '/\s/' => '_',
+                    '/[^0-9a-zа-яіїє_\.]/iu' => '',
+                    '/_+/' => '_',
+                    '/(^_)|(_$)/' => '',
+                ];
                 $dir = $this->attachPath . '/' . $mail->id;
-                $old = $this->attachPath . '/' . $mail->id . '_' . $fileInfo->id . '_' . Tool::ignoreCn($fileInfo->name);
-                $new = $dir . '/' . $fileInfo->name;
+                $old = $this->attachPath . '/' . $mail->id . '_' . $fileInfo->id . '_' . preg_replace(array_keys($replace), $replace, $fileName);
+                $new = $dir . '/' . $fileName;
                 if(!file_exists($dir))
                 {
-                    @mkdir($dir);
-                    if(!file_exists($old))
+                    Tool::mkdir($dir);
+                    if(!file_exists($old) || !file_exists($dir))
                     {
                         $this->error = 'attach remove error';
                         return false;
                     }
                 }
                 @rename($old, $new);
-                $files[] = $fileInfo->name;
+                $files[] = $new;
             }
         }
         $mail->file = $files;

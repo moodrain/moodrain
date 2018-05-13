@@ -17,6 +17,7 @@ class OSS
     private $authorization = '';
     private $pubKeyUrl = '';
     private $isVerified = false;
+    private $error = '';
 
     public function __construct(string $muyuConfig = 'oss.default', bool $init = true)
     {
@@ -70,13 +71,12 @@ class OSS
     }
     public function prefix(string $prefix = null)
     {
-        if(!$prefix)
-            return $this->prefix;
-        else
+        if($prefix)
         {
             $this->prefix = $prefix;
             return $this;
         }
+        return $this->prefix;
     }
     public function get(string $file, string $receive = 'text', string $query = null)
     {
@@ -256,5 +256,9 @@ class OSS
         $signature = base64_encode(hash_hmac('sha1', $method . "\n" . $contentMd5 . "\n" . $contentType . "\n" . Tool::gmt() . "\n" . $resource, $this->accessKeySecret, true));
         $authorization = 'OSS ' . $this->accessKeyId . ':' . $signature;
         return $authorization;
+    }
+    public function error()
+    {
+        return $this->error;
     }
 }

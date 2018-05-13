@@ -16,7 +16,7 @@ class Wechat
     private $receiveData;
     private $handler = [];
     private $isResponsed = false;
-    private $error;
+    private $error = '';
 
     public function __construct(string $muyuConfig = 'wechat.default', bool $init = true)
     {

@@ -1,6 +1,7 @@
 <?php
 namespace Muyu\Support;
 
+use App\Support\Traits\DownloaderTrait;
 use Muyu\Config;
 use Muyu\Curl;
 use Muyu\Tool;
@@ -8,7 +9,7 @@ use Muyu\Tool;
 class Downloader
 {
     private $opt;
-    use downloaderTrait;
+    use DownloaderTrait;
 
     public function run(string $mode = 'order') : void
     {
@@ -37,7 +38,7 @@ class Downloader
         $curl->close();
     }
 
-    public function nSite() : object
+    public function NSite() : object
     {
         return new class($this->url, $this->folder, $this->size)
         {
@@ -67,7 +68,7 @@ class Downloader
         };
     }
 
-    public function eSite() : object
+    public function ESite() : object
     {
         return new class($this->url, $this->folder, $this->size, $this->opt)
         {
@@ -160,41 +161,5 @@ class Downloader
         $this->opt = $opt;
         return $this;
     }
-}
-trait downloaderTrait
-{
-    private $url;
-    private $folder;
-    private $size;
-    public function setBasicField(string $url, $folder, int $size) : void
-    {
-        $this->url = $url;
-        $this->folder = $folder;
-        $this->size = $size;
-    }
-    private function goNext(Curl $curl, callable $handler = null) : bool
-    {
-        if(!$handler)
-            return !$curl->is404() && !$curl->error();
-        else
-            return $handler($curl);
-    }
-    private function save(string $file, Curl $curl) : void
-    {
-        file_put_contents($this->folder . '/' . $file, $curl->content());
-    }
-    private function check($field, string $info = null) : void
-    {
-        if(is_array($field))
-            foreach($field as $f)
-                if(!$this->$f)
-                    $this->checkFail($info ?? $f . ' not set');
-        if(is_string($field))
-            if(!$this->$field)
-                $this->checkFail($info ?? $field . ' not set');
-    }
-    private function checkFail(string $info) : void
-    {
-        die($info);
-    }
+
 }

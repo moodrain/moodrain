@@ -15,7 +15,7 @@ class Excel
     private $to;
     private $iterator;
     private $data;
-    private $error;
+    private $error = '';
     private $firstSheet = true;
 
     public function __construct(string $file = null, string $sheet = null)

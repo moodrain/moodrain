@@ -17,6 +17,7 @@ class SMTP
     private $html;
     private $text;
     private $mailer;
+    private $error = '';
 
     public function __construct(string $muyuConfig = 'smtp.default', bool $init = true)
     {
@@ -109,5 +110,9 @@ class SMTP
     public function __destruct()
     {
         $this->close();
+    }
+    public function error()
+    {
+        return $this->error;
     }
 }

@@ -57,8 +57,7 @@ class FTP
                 return false;
             return $this;
         }
-        else
-            return $this->prefix;
+        return $this->prefix;
     }
     public function force(bool $force = null)
     {
@@ -87,8 +86,7 @@ class FTP
             $this->local = $local;
             return $this;
         }
-        else
-            return $this->local;
+        return $this->local;
     }
     public function server($server = null)
     {
@@ -97,8 +95,7 @@ class FTP
             $this->server = $server;
             return $this;
         }
-        else
-            return $this->server;
+        return $this->server;
     }
     public function error() : string
     {
@@ -199,9 +196,7 @@ class FTP
             return false;
         }
         $type = $this->type($file, false);
-        if($type == 'directory' && $this->force)
-            $this->error = 'duplicate name dir exists';
-        else if(!$type)
+        if(!$type)
         {
             $dirType = $this->type(dirname($file), false);
             if(!$dirType)
@@ -211,7 +206,7 @@ class FTP
         }
         else if($type == 'directory')
             $this->error = 'duplicate name dir exists';
-        else if($type == 'file')
+        else if($type == 'file' && !$this->force)
             $this->error = 'server file already exists';
         if(!$this->error && !($isResource ? @ftp_fput($this->conn, $file, $local, FTP_BINARY) : @ftp_put($this->conn, $file, $local, FTP_BINARY)))
             $this->error = 'upload file fail';

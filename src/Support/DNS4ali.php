@@ -1,5 +1,6 @@
 <?php
 namespace Muyu\Support;
+
 use Muyu\Config;
 use Muyu\Curl;
 use Muyu\Tool;

@@ -21,7 +21,6 @@ class Curl
     private $retry;
     private $retryErrorCode;
     private $proxy;
-
     private $error = '';
 
     public function __construct(string $url = null)
@@ -51,8 +50,7 @@ class Curl
             $this->url = $url;
             return $this;
         }
-        else
-            return $this->url . $this->path . ( $this->query ? '?' . http_build_query($this->query) : '');
+        return $this->url . $this->path . ( $this->query ? '?' . http_build_query($this->query) : '');
     }
     public function path(string $path) : Curl
     {
@@ -90,8 +88,7 @@ class Curl
             $this->transfer = $transfer;
             return $this;
         }
-        else
-            return $this->transfer;
+        return $this->transfer;
     }
     public function contentType(string $contentType = null) : Curl
     {
@@ -101,8 +98,7 @@ class Curl
             $this->header(['Content-Type' => $contentType]);
             return $this;
         }
-        else
-            return $this->contentType;
+        return $this->contentType;
     }
     public function data(array $data) : Curl
     {
@@ -150,10 +146,10 @@ class Curl
             foreach($header as $key => $value)
                 array_push($headerData, $key . ': ' . $value);
             curl_setopt($this->curl, CURLOPT_HTTPHEADER, $headerData);
+            $this->header = $header;
             return $this;
         }
-        else
-            return $this->result['header'];
+        return $this->result['header'];
     }
     public function status() : string
     {
@@ -186,8 +182,7 @@ class Curl
             $this->retry = $times;
             return $this;
         }
-        else
-            return $this->retry;
+        return $this->retry;
     }
     public function retryErrorCode($errorCode = null)
     {
@@ -196,8 +191,7 @@ class Curl
             $this->retryErrorCode = is_array($errorCode) ? $errorCode : [$errorCode];
             return $this;
         }
-        else
-            return count($this->retryErrorCode) == 1 ? $this->retryErrorCode[0] : $this->retryErrorCode;
+        return count($this->retryErrorCode) == 1 ? $this->retryErrorCode[0] : $this->retryErrorCode;
     }
     public function proxy(string $proxy)
     {
@@ -206,8 +200,7 @@ class Curl
             $this->proxy = $proxy;
             return $this;
         }
-        else
-            return $this->proxy;
+        return $this->proxy;
     }
 
 

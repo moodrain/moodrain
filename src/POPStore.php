@@ -95,10 +95,14 @@ class POPStore
     }
     private function initList() : void
     {
-        if(!file_exists($this->path) && !@mkdir($this->path))
+        if(!file_exists($this->path))
         {
-            $this->error = 'mail dir not found';
-            return;
+            Tool::mkdir($this->path);
+            if(!file_exists($this->path))
+            {
+                $this->error = 'mail dir not found';
+                return;
+            }
         }
         $mailJsons = scandir($this->path);
         $mailJsons = array_reverse($mailJsons);
@@ -140,7 +144,18 @@ class POPStore
             $newMail = $this->pop3->get($newMailId);
             $newMailDate = strtotime($newMail->date);
             if($newMailDate <= $after)
+            {
+                if(isset($newMail->file))
+                {
+                    foreach($newMail->file as $file)
+                    {
+                        @unlink($file);
+                        if(count(scandir(dirname($file))) == 2)
+                            @rmdir(dirname($file));
+                    }
+                }
                 break;
+            }
             $listItem = new \stdClass();
             $listItem->id = $id++;
             $listItem->date = $newMailDate;
@@ -165,8 +180,13 @@ class POPStore
     {
         return $this->error;
     }
+    public function close() : void
+    {
+        if($this->pop3)
+            $this->pop3->close();
+    }
     public function __destruct()
     {
-        $this->pop3->close();
+        $this->close();
     }
 }

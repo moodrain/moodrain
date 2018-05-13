@@ -12,9 +12,15 @@ class Tool
         var_dump($value);
         exit();
     }
+    static function method() : string
+    {
+        return $_SERVER['REQUEST_METHOD'] ?? null;
+    }
     static function cors() : void
     {
         header('Access-Control-Allow-Origin: *');
+        header('Access-Control-Allow-Headers: *');
+        header('Access-Control-Allow-Credentials: *');
     }
     static function toDownload(string $filename) : void
     {
@@ -29,6 +35,27 @@ class Tool
     static function router()
     {
         return new Router();
+    }
+    static function proxy(string $host)
+    {
+        $url = $url ?? $_SERVER['REQUEST_URI'];
+        $url = explode('/', $url);
+        array_shift($url);
+        if(count($url) == 1)
+            array_unshift($url, 'Index');
+        $controller = ucfirst($url[0]);
+        $action = Tool::hump(explode('?', $url[1])[0]);
+        $action = $action == '' ? 'index' : $action;
+        $curl = new Curl();
+        $curl->url($host)->path('/' . $controller . '/' . $action);
+        if($_GET)
+            $curl->query('?' . http_build_query($_GET));
+        if($_POST)
+            $curl->post($_POST);
+        if(Tool::getallheaders())
+            $curl->header(Tool::getallheaders());
+        $method = strtolower(Tool::method());
+        return $curl->$method();
     }
     static function uuid() : string
     {
@@ -79,15 +106,24 @@ class Tool
             return strtoupper($matches[2]);
         }, $str);
     }
-    static function pdo(array $conf = null, array $attr = [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION], string $muyuConfig = 'database.default') : PDO
+    static function pdo(string $muyuConfig = 'database.default', array $conf = null, array $attr = null) : PDO
     {
+        $attr = $attr ?? [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION];
         $config  = new Config();
         $host = $conf['host'] ?? $config( $muyuConfig . '.host');
         $type = $conf['type'] ?? $config($muyuConfig . '.type');
         $user = $conf['user'] ?? $config($muyuConfig . '.user');
         $pass = $conf['pass'] ?? base64_decode($config($muyuConfig . '.pass'));
-        $db   = $conf['db']   ?? $config($muyuConfig . '.db');
+        $db   = $conf['db']   ?? $config($muyuConfig . '.db', '');
         return new PDO("$type:host=$host;dbname=$db;charset=utf8", $user, $pass, $attr);
+    }
+    static function dbConfigHelper(string $muyuConfig, string $db) : array
+    {
+        $config = new Config();
+        $conf = $config($muyuConfig);
+        $conf['db'] = $db;
+        $conf['pass'] = base64_decode($conf['pass']);
+        return $conf;
     }
     static function log($log, string $muyuConfig = 'log.default') : void
     {
@@ -170,7 +206,8 @@ class Tool
     }
     static function ext(string $filename) : ?string
     {
-        return explode('.', basename($filename))[1] ?? null;
+        $info = explode('.', basename($filename));
+        return $info[count($info)-1] ?? null;
     }
     static function textToImg(string $text, string $filename = null, int $fontSize = 20, string $fontType = __DIR__ . '/../storage/font/simyou.ttf')
     {
@@ -185,12 +222,12 @@ class Tool
         imagepng($im, $filename);
         imagedestroy($im);
     }
-    static function mkdir(string $dir)
+    static function mkdir(string $dir) : bool
     {
         $parent = dirname($dir);
         if(!file_exists($parent))
             self::mkdir($parent);
-        @mkdir($dir);
+        return @mkdir($dir);
     }
     static function rmdir(string $dir)
     {
@@ -214,5 +251,24 @@ class Tool
         if($timezone)
             $date->setTimezone(new \DateTimeZone($timezone));
         return $date->format(DATE_ATOM);
+    }
+    static function getallheaders()
+    {
+        if (!function_exists('getallheaders'))
+        {
+            function getallheaders()
+            {
+                $headers = array ();
+                foreach ($_SERVER as $name => $value)
+                {
+                    if (substr($name, 0, 5) == 'HTTP_')
+                    {
+                        $headers[str_replace(' ', '-', ucwords(strtolower(str_replace('_', ' ', substr($name, 5)))))] = $value;
+                    }
+                }
+                return $headers;
+            }
+        }
+        return getallheaders();
     }
 }

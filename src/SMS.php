@@ -20,7 +20,7 @@ class SMS
     private $signatureNonce;
     private $outId;
     private $version;
-    private $error;
+    private $error = '';
 
     public function __construct(string $muyuConfig = 'sms.default', $init = true)
     {
