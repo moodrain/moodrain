@@ -27,10 +27,10 @@ class Tool
         header('Content-Type: application/octet-stream');
         header('Content-Disposition: attachment; filename="' . $filename . '"');
     }
-    static function route() : void
+    static function route(string $prefix = '') : void
     {
         $router = Tool::router();
-        $router->route();
+        $router->route(null, $prefix);
     }
     static function router()
     {
@@ -74,6 +74,11 @@ class Tool
     static function hasCn(string $str) : bool
     {
         return preg_match('/([\x81-\xfe][\x40-\xfe])/', $str);
+    }
+    static function strReplaceOnce(string $find, string $replace, string $string)
+    {
+        $pos = strpos($string, $find);
+        return $pos !== false ? substr_replace($string, $replace, $pos, strlen($find)) : $string;
     }
     static function validate(string $type, $value) : bool
     {

@@ -5,9 +5,10 @@ use Muyu\Tool;
 
 class Router
 {
-    public function route(string $url = null)
+    public function route(string $url = null, string $prefix = '')
     {
         $url = $url ?? $_SERVER['REQUEST_URI'];
+        $url = $prefix ? Tool::strReplaceOnce($prefix, '', $url) : $url;
         $request = explode('/', $url);
         array_shift($request);
         echo $this->handle($request);

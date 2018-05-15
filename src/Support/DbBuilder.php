@@ -26,10 +26,17 @@ class DbBuilder
             $this->init($config($muyuConfig));
     }
 
-    function init(array $config = []) : DbBuilder
+    function init(array $config = [], bool $connect = true) : DbBuilder
     {
+        $this->charset = 'utf8mb4';
+        $this->collate = 'utf8mb4_general_ci';
+        $this->tables = [];
+        $this->autoMakeTable = false;
+        $this->tablePrefix = '';
         foreach($config as $key => $val)
             $this->$key = $val;
+        if(!$connect)
+            return $this;
         $conf = [
             'type' => $this->type,
             'host' => $this->host,
@@ -37,8 +44,6 @@ class DbBuilder
             'pass' => $this->pass,
             'db'   => $this->db,
         ];
-        $this->charset = 'utf8mb4';
-        $this->collate = 'utf8mb4_general_ci';
         if($this->db)
         {
             $confTmp = $conf;
@@ -54,9 +59,6 @@ class DbBuilder
         }
         else
             $this->pdo = Tool::pdo('', $conf, $this->pdoAttr);
-        $this->tables = [];
-        $this->autoMakeTable = false;
-        $this->tablePrefix = '';
         return $this;
     }
 
@@ -170,7 +172,12 @@ class DbBuilder
     {
         $filename = $file ?? $this->db . '.json';
         !file_exists($filename) && die('file not found');
-        $db = json_decode(file_get_contents($filename), true);
+        $this->input(json_decode(file_get_contents($filename), true));
+        return $this;
+    }
+
+    function input(array $db)
+    {
         !$db && die('parse json fail');
         $this->db = $db['db'];
         $this->tablePrefix = $db['tablePrefix'];
@@ -203,7 +210,7 @@ class DbBuilder
             private $primaryKey;
             private $prefix;
 
-            function __construct(object $pdo, string $table = '', array $fields = [], string $prefix = '')
+            function __construct(?object $pdo, string $table = '', array $fields = [], string $prefix = '')
             {
                 $this->pdo = $pdo;
                 $this->table = $table;
