@@ -150,7 +150,7 @@ class DbBuilder
     {
         !file_exists($dir) && mkdir($dir);
         foreach($this->tables as $tableName => $table)
-            file_put_contents($dir . '/' . ucfirst(Tool::hump(str_replace($this->tablePrefix, '', $tableName . '.java'))), $this->TableBuilder($tableName, $table, $this->tablePrefix, false, false)->bean()) ;
+            file_put_contents($dir . '/' . ucfirst(Tool::hump(str_replace($this->tablePrefix, '', $tableName . '.java'))), $this->TableBuilder($tableName, $table, $this->tablePrefix, false, false)->bean($package)) ;
         return $this;
     }
 
