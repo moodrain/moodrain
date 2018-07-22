@@ -42,7 +42,7 @@ class Bwh
     }
     public function isRunning()
     {
-        return $this->status()['ve_status'] == 'Running' ? true : false;
+        return $this->status()['ve_status'] == 'running' ? true : false;
     }
     public function isMigrating()
     {
@@ -94,7 +94,7 @@ class Bwh
     {
         $param = array_merge($param, ['veid' => $this->id, 'api_key' => $this->key]);
         $curl = new Curl();
-        $rs = $curl->url($this->apiUrl . '/' . $request)->data($param)->receive('json')->post();
+        $rs = $curl->url($this->apiUrl . '/' . $request)->accept('json')->data($param)->post();
         if(!$rs)
         {
             $this->error = 'request fail:' . $curl->error();

@@ -22,8 +22,10 @@ class Wechat
     {
         $this->muyuConfig = $muyuConfig;
         if($init)
+        {
             $config = new Config();
-        $this->init($config($this->muyuConfig));
+            $this->init($config($muyuConfig));
+        }
     }
     public function init(array $config) : void
     {

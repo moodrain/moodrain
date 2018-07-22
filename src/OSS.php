@@ -21,9 +21,11 @@ class OSS
 
     public function __construct(string $muyuConfig = 'oss.default', bool $init = true)
     {
-        $config = new Config();
         if($init)
+        {
+            $config = new Config();
             $this->init($config($muyuConfig));
+        }
     }
     public function init(array $config)
     {
@@ -78,12 +80,12 @@ class OSS
         }
         return $this->prefix;
     }
-    public function get(string $file, string $receive = 'text', string $query = null)
+    public function get(string $file, string $query = null)
     {
         $resource = '/' . $this->bucketName . '/' . ($this->prefix ? $this->prefix . '/' : '') . $file . $query;
         $url = $this->domain . '/' . ($this->prefix ? $this->prefix . '/' : '') . $file . $query;
         $curl = new Curl();
-        $content = $curl->url($url)->receive($receive)->header([
+        $content = $curl->url($url)->transfer(false)->header([
             'Date' => Tool::gmt(),
             'Authorization' => $this->sign('get', $resource),
         ])->get();
@@ -113,7 +115,7 @@ class OSS
             }
         }
         $curl = new Curl();
-        $rs = $curl->url($url)->file($from)->contentType($contentType)->header([
+        $rs = $curl->url($url)->file($from)->header([
             'Date' => Tool::gmt(),
             'Authorization' => $this->sign('put', $resource, $contentType, $contentMd5),
             'Content-Length' => filesize($from),
@@ -142,7 +144,7 @@ class OSS
         $prefix = ($prefix && $prefix != '/' ? $prefix : null) ?? $this->prefix;
         $maxKeys = 1000;
         $curl = new Curl();
-        $curl->url($url)->receive('xml')->header([
+        $curl->url($url)->accept('xml')->header([
             'Date' => Tool::gmt(),
             'Authorization' => $this->sign('get', $resource),
         ])->query([

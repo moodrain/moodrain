@@ -14,8 +14,8 @@ class Curl
     private $data;
     private $file;
     private $contentType;
+    private $accept;
     private $result;
-    private $responseType;
     private $transfer;
     private $timeout;
     private $retry;
@@ -62,25 +62,6 @@ class Curl
         $this->query = $query;
         return $this;
     }
-    public function receive(string $responseType) : Curl
-    {
-        switch($responseType)
-        {
-            case 'text' : $this->responseType = 'text/plain';break;
-            case 'html' : $this->responseType = 'text/html';break;
-            case 'json' : $this->responseType = 'application/json';break;
-            case 'xml'  : $this->responseType = 'application/xml';break;
-            case 'pdf'  : $this->responseType = 'application/pdf';break;
-            case 'zip'  : $this->responseType = 'application/zip';break;
-            case 'jpg'  : $this->responseType = 'image/jpeg';break;
-            case 'png'  : $this->responseType = 'image/png';break;
-            case 'gif'  : $this->responseType = 'image/gif';break;
-            case 'bmp'  : $this->responseType = 'image/bmp';break;
-            case 'webp' : $this->responseType = 'image/webp';break;
-            default     : $this->responseType = $responseType;
-        }
-        return $this;
-    }
     public function transfer(bool $transfer = null)
     {
         if($transfer !== null)
@@ -90,14 +71,17 @@ class Curl
         }
         return $this->transfer;
     }
-    public function contentType(string $contentType = null) : Curl
+    public function accept(string $accept = null)
     {
-        if($contentType)
+        if($accept !== null)
         {
-            $this->contentType = $contentType;
-            $this->header(['Content-Type' => $contentType]);
+            $this->accept = $accept;
             return $this;
         }
+        return $this->accept;
+    }
+    public function contentType()
+    {
         return $this->contentType;
     }
     public function data(array $data) : Curl
@@ -146,7 +130,6 @@ class Curl
             foreach($header as $key => $value)
                 array_push($headerData, $key . ': ' . $value);
             curl_setopt($this->curl, CURLOPT_HTTPHEADER, $headerData);
-            $this->header = $header;
             return $this;
         }
         return $this->result['header'];
@@ -159,7 +142,7 @@ class Curl
     {
         return Tool::strBetween($this->content(), '<title>', '</title>');
     }
-    public function content() : string
+    public function content()
     {
         return $this->result['content'];
     }
@@ -202,14 +185,12 @@ class Curl
         }
         return $this->proxy;
     }
-
-
     public function get(bool $returnResult = true)
     {
         $this->method = 'GET';
         curl_setopt($this->curl, CURLOPT_URL, $this->fullUrl());
         if($returnResult)
-            return $this->format($this->handle($this->curl));
+            return $this->handle($this->curl);
         else
         {
             $this->handle($this->curl);
@@ -237,7 +218,7 @@ class Curl
             curl_setopt($this->curl, CURLOPT_POSTFIELDS, $data);
         }
         if($returnResult)
-            return $this->format($this->handle($this->curl));
+            return $this->handle($this->curl);
         else
         {
             $this->handle($this->curl);
@@ -259,7 +240,7 @@ class Curl
         if($this->data)
             curl_setopt($this->curl, CURLOPT_POSTFIELDS, $this->data);
         if($returnResult)
-            return $this->format($this->handle($this->curl));
+            return $this->handle($this->curl);
         else
         {
             $this->handle($this->curl);
@@ -272,7 +253,7 @@ class Curl
         curl_setopt($this->curl, CURLOPT_URL, $this->fullUrl());
         curl_setopt($this->curl, CURLOPT_CUSTOMREQUEST, 'DELETE');
         if($returnResult)
-            return $this->format($this->handle($this->curl));
+            return $this->handle($this->curl);
         else
         {
             $this->handle($this->curl);
@@ -285,7 +266,7 @@ class Curl
         curl_setopt($this->curl, CURLOPT_URL, $this->fullUrl());
         curl_setopt($this->curl, CURLOPT_CUSTOMREQUEST, 'PATCH');
         if($returnResult)
-            return $this->format($this->handle($this->curl));
+            return $this->handle($this->curl);
         else
         {
             $this->handle($this->curl);
@@ -294,22 +275,26 @@ class Curl
     }
     private function format($raw)
     {
-        if($this->responseType)
-            header('Content-Type: ' . $this->responseType);
         if($raw === null || $raw === false)
             return $raw;
         if($this->transfer)
         {
-            if(in_array($this->responseType, [
-                'application/json',
-                'application/xml',]))
-                header('Content-Type: text/plain');
-            switch ($this->responseType)
+            if($this->accept)
             {
-                case 'application/json': return json_decode($raw, true);
-                case 'application/xml' : return XML::parse($raw);
-                default                : return $raw;
+                switch($this->accept)
+                {
+                    case 'json': return json_decode($raw, true);
+                    case 'xml': return XML::parse($raw);
+                    default: return $raw;
+                }
             }
+            else
+                switch ($this->contentType)
+                {
+                    case 'application/json': return json_decode($raw, true);
+                    case 'application/xml' : return XML::parse($raw);
+                    default                : return $raw;
+                }
         }
         else
             return $raw;
@@ -384,7 +369,9 @@ class Curl
                 $content .= $row . ($count == count($response) ? '' : "\r\n");
         }
         $this->result['header'] = $headers;
-        $this->result['content'] = $content;
+        $this->result['body'] = $content;
+        $this->result['content'] = $this->format($content);
+        $this->contentType = $headers['Content-Type'] ?? '';
         return $this->content();
     }
     public function is404() : bool

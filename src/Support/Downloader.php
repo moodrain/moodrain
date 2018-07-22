@@ -5,7 +5,6 @@ use App\Support\Traits\DownloaderTrait;
 use Muyu\Config;
 use Muyu\Curl;
 use Muyu\Tool;
-
 class Downloader
 {
     private $opt;

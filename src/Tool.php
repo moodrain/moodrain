@@ -18,9 +18,9 @@ class Tool
     }
     static function cors() : void
     {
-        header('Access-Control-Allow-Origin: *');
+        header('Access-Control-Allow-Origin: ' . self::getallheaders()['Origin'] ?? '*');
         header('Access-Control-Allow-Headers: *');
-        header('Access-Control-Allow-Credentials: *');
+        header('Access-Control-Allow-Credentials: true');
     }
     static function toDownload(string $filename) : void
     {

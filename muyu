@@ -1,17 +1,20 @@
 <?php
 require_once('vendor/autoload.php');
-$optionFormat = 'f';
-try
-{
-    $config = new Muyu\Config();
-} catch (Exception $e)
-{
-    echo $e->getMessage() . PHP_EOL;
-    $config = new Muyu\Config([]);
-}
-$host = $config('command.host', 'https://moodrain.cn');
-$user = $config('command.user', null);
-$pass = $config('command.pass', null) ? base64_decode($config('command.pass')) : null;
-$command = new Muyu\Command($host, $user, $pass);
-$option = getopt($optionFormat);
-@$command->read($argv, $option, str_replace("\\", '/', __DIR__));
+//$optionFormat = 'f';
+//try
+//{
+//    $config = new Muyu\Config();
+//
+//} catch (Exception $e)
+//{
+//    echo $e->getMessage() . PHP_EOL;
+//    $config = new Muyu\Config([]);
+//}
+//$host = $config('command.host', 'https://moodrain.cn');
+//$user = $config('command.user', null);
+//$pass = $config('command.pass', null) ? base64_decode($config('command.pass')) : null;
+//$command = new Muyu\Command($host, $user, $pass);
+//$option = getopt($optionFormat);
+//@$command->read($argv, $option, str_replace("\\", '/', __DIR__));
+$cli = new \Muyu\Support\CLI();
+var_dump($cli);

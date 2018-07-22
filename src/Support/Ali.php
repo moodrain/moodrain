@@ -2,7 +2,6 @@
 namespace Muyu\Support;
 
 use Muyu\Tool;
-
 class Ali
 {
     public static function httpParam(array $params, string $accessKeySecret) : array

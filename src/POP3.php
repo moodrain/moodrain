@@ -18,9 +18,11 @@ class POP3
 
     public function __construct(string $muyuConfig = 'pop3.default', bool $init = true)
     {
-        $config = new Config();
         if($init)
+        {
+            $config = new Config();
             $this->init($config($muyuConfig));
+        }
     }
     public function init(array $config)
     {

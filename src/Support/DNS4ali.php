@@ -4,7 +4,6 @@ namespace Muyu\Support;
 use Muyu\Config;
 use Muyu\Curl;
 use Muyu\Tool;
-
 class DNS4ali
 {
     private $commonParam;
@@ -40,7 +39,7 @@ class DNS4ali
             $serviceParam['ValueKeyWord'] = $valueKeyWord;
         $sendParam = Ali::httpParam(array_merge($this->commonParam, $serviceParam), $this->accessKeySecret);
         $curl = new Curl();
-        $rs = $curl->url($this->apiUrl)->data($sendParam)->receive('json')->post();
+        $rs = $curl->url($this->apiUrl)->data($sendParam)->accept('json')->post();
         $this->error = $rs['Message'] ?? null;
         return $rs['DomainRecords']['Record'] ?? [];
     }
@@ -58,7 +57,7 @@ class DNS4ali
         $serviceParam['Line'] = $line;
         $sendParam = Ali::httpParam(array_merge($this->commonParam, $serviceParam), $this->accessKeySecret);
         $curl = new Curl();
-        $rs = $curl->url($this->apiUrl)->data($sendParam)->receive('json')->post();
+        $rs = $curl->url($this->apiUrl)->data($sendParam)->accept('json')->post();
         $this->error = $rs['Message'] ?? null;
         return !isset($rs['Message']);
     }

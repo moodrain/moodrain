@@ -21,9 +21,11 @@ class SMTP
 
     public function __construct(string $muyuConfig = 'smtp.default', bool $init = true)
     {
-        $config = new Config();
         if($init)
+        {
+            $config = new Config();
             $this->init($config($muyuConfig));
+        }
     }
     public function init(array $config)
     {

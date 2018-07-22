@@ -10,15 +10,21 @@ class Router
         $url = $url ?? $_SERVER['REQUEST_URI'];
         $url = $prefix ? Tool::strReplaceOnce($prefix, '', $url) : $url;
         $request = explode('/', $url);
-        array_shift($request);
+        foreach($request as $r)
+        {
+            if($r === '')
+                array_shift($request);
+            else
+                break;
+        }
         echo $this->handle($request);
     }
     private function handle(array $url)
     {
-        if(count($url) == 1)
+        if(count($url) <= 1)
             array_unshift($url, 'Index');
         $controller = ucfirst($url[0]);
-        $action = Tool::hump(explode('?', $url[1])[0]);
+        $action = Tool::hump(explode('?', $url[1] ?? '')[0]);
         $action = $action == '' ? 'index' : $action;
         define('Controller', $controller);
         define('Action', $action);

@@ -24,9 +24,11 @@ class SMS
 
     public function __construct(string $muyuConfig = 'sms.default', $init = true)
     {
-        $config = new Config();
         if($init)
+        {
+            $config = new Config();
             $this->init($config($muyuConfig));
+        }
     }
     public function init(array $config) : SMS
     {
@@ -65,7 +67,7 @@ class SMS
         $url = 'https://dysmsapi.aliyuncs.com';
         $params = Ali::httpParam($params, $this->accessKeySecret);
         $curl = new Curl();
-        $rs = $curl->url($url)->data($params)->receive('json')->post();
+        $rs = $curl->url($url)->data($params)->accept('json')->post();
         $curl->close();
         if($rs['Code'] == 'OK')
             return true;
