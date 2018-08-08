@@ -18,7 +18,7 @@ class Tool
     }
     static function cors() : void
     {
-        header('Access-Control-Allow-Origin: ' . self::getallheaders()['Origin'] ?? '*');
+        header('Access-Control-Allow-Origin: ' . self::getallheaders()['Origin']);
         header('Access-Control-Allow-Headers: *');
         header('Access-Control-Allow-Credentials: true');
     }
@@ -35,27 +35,6 @@ class Tool
     static function router()
     {
         return new Router();
-    }
-    static function proxy(string $host)
-    {
-        $url = $url ?? $_SERVER['REQUEST_URI'];
-        $url = explode('/', $url);
-        array_shift($url);
-        if(count($url) == 1)
-            array_unshift($url, 'Index');
-        $controller = ucfirst($url[0]);
-        $action = Tool::hump(explode('?', $url[1])[0]);
-        $action = $action == '' ? 'index' : $action;
-        $curl = new Curl();
-        $curl->url($host)->path('/' . $controller . '/' . $action);
-        if($_GET)
-            $curl->query('?' . http_build_query($_GET));
-        if($_POST)
-            $curl->post($_POST);
-        if(Tool::getallheaders())
-            $curl->header(Tool::getallheaders());
-        $method = strtolower(Tool::method());
-        return $curl->$method();
     }
     static function uuid() : string
     {
@@ -214,14 +193,16 @@ class Tool
         $info = explode('.', basename($filename));
         return $info[count($info)-1] ?? null;
     }
-    static function textToImg(string $text, string $filename = null, int $fontSize = 20, string $fontType = __DIR__ . '/../storage/font/simyou.ttf')
+    static function textToImg(string $text, string $filename = null, int $fontSize = 20, array $fontColor = [0, 0, 0], string $fontType = __DIR__ . '/../storage/font/simyou.ttf')
     {
         $im = imagecreatetruecolor(strlen($text) * $fontSize * (self::hasCn($text) ? 5/11 : 2/3), (substr_count($text, "\n")+1) * $fontSize * 31/22);
         imagesavealpha($im, true);
         $color = imagecolorallocatealpha($im, 0, 0, 0, 127);
         imagefill($im, 0, 0, $color);
-        $black = imagecolorallocate($im, 0, 0, 0);
-        imagettftext($im, $fontSize, 0, 0, $fontSize, $black, $fontType, $text);
+        var_dump($fontColor);
+        $fontColor = imagecolorallocate($im, $fontColor[0], $fontColor[1], $fontColor[2]);
+        var_dump($fontColor);
+        imagettftext($im, $fontSize, 0, 0, $fontSize, $fontColor, $fontType, $text);
         if($filename && !file_exists(dirname($filename)))
             self::mkdir(dirname($filename));
         imagepng($im, $filename);

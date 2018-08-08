@@ -3,7 +3,7 @@ namespace Muyu\Support;
 
 use Muyu\Config;
 
-class CLI
+class CLI // 该cli接口已弃置
 {
     private $config;
     private $server;
