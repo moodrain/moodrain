@@ -77,6 +77,8 @@ class Bwh
             return false;
         }
         $rs = $this->handle('migrate/start', ['location' => $location]);
+        if(!$rs)
+            return false;
         $ips = $rs['newIps'];
         return count($ips) == 1 ? $ips[0] : $ips;
     }
