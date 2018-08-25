@@ -10,21 +10,8 @@ class Downloader
     private $opt;
     use DownloaderTrait;
 
-    public function run(string $mode = 'order') : void
+    function inOrder() : void
     {
-        switch($mode)
-        {
-            case 'order': $this->orderDownload();break;
-            case 'e':     $this->eSite()->run();break;
-            case 'n':     $this->nSite()->run();break;
-            default:      die('unknown mode');
-        }
-    }
-    private function orderDownload() : void
-    {
-        $this->check('url');
-        $this->folder = $this->folder ?? './storage/download';
-        Tool::mkdir($this->folder);
         $curl = new Curl();
         for($i = 1;$i <= $this->size;$i++)
         {
@@ -37,19 +24,36 @@ class Downloader
         $curl->close();
     }
 
-    public function NSite() : object
+    function byStream($context, $filename = null)
+    {
+        $stream = fopen($this->url, 'r', false, stream_context_create($context));
+        $filename = $filename ?? basename(explode('?', $this->url)[0]) ?? 'download';
+        $file = fopen($this->folder . '/' . $filename, 'w');
+        $buffer = null;
+        while(true)
+        {
+            $buffer = fgets($stream, 1024000);
+            fwrite($file, $buffer);
+            if(feof($stream))
+                break;
+        }
+        fclose($stream);
+        fclose($file);
+    }
+
+    function NSite() : object
     {
         return new class($this->url, $this->folder, $this->size)
         {
             use downloaderTrait;
-            public function __construct(string $url = null, string $folder = null, int $size = null)
+            function __construct(string $url = null, string $folder = null, int $size = null)
             {
                 $this->setBasicField($url, $folder, $size);
             }
             function run() : void
             {
                 $this->check('url');
-                [,,,,$galleryId] = explode('/', $this->url);
+                $galleryId = explode('/', $this->url)[4];
                 $ext = Tool::ext($this->url);
                 $this->folder = $this->folder ?? $galleryId;
                 Tool::mkdir($this->folder);
@@ -67,7 +71,7 @@ class Downloader
         };
     }
 
-    public function ESite() : object
+    function ESite() : object
     {
         return new class($this->url, $this->folder, $this->size, $this->opt)
         {
@@ -75,7 +79,7 @@ class Downloader
             private $opt;
             private $id;
             private $hash;
-            public function __construct(string $url = null, string $folder = null, int $size = null, array $opt = [])
+            function __construct(string $url = null, string $folder = null, int $size = null, array $opt = [])
             {
                 $config = new Config();
                 $this->setBasicField($url, $folder, $size);
@@ -132,30 +136,33 @@ class Downloader
         };
     }
 
-    public function __construct(string $url = null, string $folder = null, int $size = null, array $opt = [])
+    function __construct(string $url = null, string $folder = null, int $size = null, array $opt = [])
     {
         $this->url = $url;
         $this->size = $size ?? 9999;
         $this->folder = $folder;
         $this->opt = $opt;
         set_time_limit(0);
+        $this->check('url');
+        $this->folder = $this->folder ?? './storage/download';
+        Tool::mkdir($this->folder);
     }
-    public function url(string $url) : Downloader
+    function url(string $url) : Downloader
     {
         $this->url = $url;
         return $this;
     }
-    public function size(int $size) : Downloader
+    function size(int $size) : Downloader
     {
         $this->size = $size;
         return $this;
     }
-    public function folder(string $folder) : Downloader
+    function folder(string $folder) : Downloader
     {
         $this->folder = $folder;
         return $this;
     }
-    public function opt(array $opt) : Downloader
+    function opt(array $opt) : Downloader
     {
         $this->opt = $opt;
         return $this;

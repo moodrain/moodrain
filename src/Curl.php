@@ -136,7 +136,7 @@ class Curl
     }
     public function status() : string
     {
-        return $this->result['header']['Status'];
+        return $this->result['header']['Status'] ?? '';
     }
     public function title() : string
     {
@@ -144,7 +144,7 @@ class Curl
     }
     public function content()
     {
-        return $this->result['content'];
+        return $this->result['content'] ?? '';
     }
     public function timeout(int $second = null)
     {

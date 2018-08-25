@@ -230,6 +230,12 @@ class FTP
             $this->error = 'duplicate name file exists';
         else if(!$type)
         {
+            if($this->prefix == null || $this->prefix == '/')
+            {
+                if(!$this->error && !@ftp_mkdir($this->conn, $dir))
+                    $this->error = 'mkdir fail';
+                return $this->error === '';
+            }
             $parentType = $this->type(dirname($dir), false);
             if(!$parentType && !$this->mkdir(dirname($dir), false))
                 return false;

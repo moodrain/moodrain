@@ -1,6 +1,5 @@
 <?php
 namespace Muyu\Support;
-
 use Muyu\Config;
 use Muyu\Curl;
 
@@ -51,11 +50,14 @@ class Bwh
     }
     public function location()
     {
-        return $this->handle('migrate/getLocations')['currentLocation'];
+        $rs = $this->handle('migrate/getLocations');
+        return  $rs ? $rs['currentLocation'] : false;
     }
     public function migrate(string $location = null)
     {
         $rs = $this->handle('migrate/getLocations');
+        if(!$rs)
+            return false;
         $current = $rs['currentLocation'];
         $locations = $rs['locations'];
         if(!$location)
@@ -80,15 +82,15 @@ class Bwh
     }
     public function stop()
     {
-        return $this->handle('stop')['error'] == 0;
+        return $this->handle('stop');
     }
     public function start()
     {
-        return $this->handle('start')['error'] == 0;
+        return $this->handle('start');
     }
     public function restart()
     {
-        return $this->handle('restart')['error'] == 0;
+        return $this->handle('restart');
     }
     private function handle(string $request, array $param = [])
     {
@@ -105,6 +107,7 @@ class Bwh
             $this->error = $rs['error'];
             return false;
         }
+        $this->error = null;
         return $rs;
     }
     public function error()
