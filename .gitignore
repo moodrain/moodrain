@@ -6,3 +6,4 @@ composer.lock
 Caddyfile
 /config/
 /storage/mail/
+/storage/font/
