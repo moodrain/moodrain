@@ -99,6 +99,11 @@ class Curl
         $this->data = $data;
         return $this;
     }
+    public function json($obj): Curl
+    {
+        $this->data = json_encode($obj);
+        return $this;
+    }
     public function cookie(array $cookie = null)
     {
         if($cookie)
@@ -201,7 +206,7 @@ class Curl
     {
         $this->method = 'POST';
         curl_setopt($this->curl, CURLOPT_URL, $this->fullUrl());
-        curl_setopt($this->curl, CURLOPT_POST, 1);
+        curl_setopt($this->curl, CURLOPT_CUSTOMREQUEST, "POST");
         if($this->data)
         {
             $data = $this->data;
@@ -229,7 +234,7 @@ class Curl
     {
         $this->method = 'PUT';
         curl_setopt($this->curl, CURLOPT_URL, $this->fullUrl());
-        curl_setopt($this->curl, CURLOPT_PUT, 1);
+        curl_setopt($this->curl, CURLOPT_CUSTOMREQUEST, "PUT");
         if($this->file)
         {
             $stream = fopen($this->file, 'r');

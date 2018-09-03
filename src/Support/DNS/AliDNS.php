@@ -1,10 +1,10 @@
 <?php
-namespace Muyu\Support;
+namespace Muyu\Support\DNS;
 
-use Muyu\Config;
 use Muyu\Curl;
+use Muyu\Support\Ali;
 use Muyu\Tool;
-class DNS4ali
+class AliDNS
 {
     private $commonParam;
     private $accessKeyId;
@@ -12,31 +12,25 @@ class DNS4ali
     private $error;
     private $apiUrl = 'https://alidns.aliyuncs.com';
 
-    public function __construct($muyuConfig = 'ali.default', bool $init = true)
-    {
-        $config = new Config();
-        if($init)
-            $this->init($config('ali.default'));
-    }
-    public function init(array $config)
+    public function __construct(array $config)
     {
         foreach ($config as $key => $val)
             $this->$key = $val;
-        $this->initCommonParam();
     }
-    public function getDomainRecords(string $domainName, string $rrKeyWord = null, string $typeKeyWord = null, string $valueKeyWord = null) : array
+    public function getRecords(string $domainName, array $options = []) : array
     {
+        $this->init();
         $serviceParam = [];
         $serviceParam['Action'] = 'DescribeDomainRecords';
         $serviceParam['DomainName'] = $domainName;
         $serviceParam['PageNumber'] = 1;
         $serviceParam['PageSize'] = 500;
-        if($rrKeyWord)
-            $serviceParam['RRKeyWord'] = $rrKeyWord;
-        if($typeKeyWord)
-            $serviceParam['TypeKeyWord'] = $typeKeyWord;
-        if($valueKeyWord)
-            $serviceParam['ValueKeyWord'] = $valueKeyWord;
+        if(isset($options['name']))
+            $serviceParam['RRKeyWord'] = $options['name'];
+        if(isset($options['type']))
+            $serviceParam['TypeKeyWord'] = $options['type'];
+        if(isset($options['value']))
+            $serviceParam['ValueKeyWord'] = $options['value'];
         $sendParam = Ali::httpParam(array_merge($this->commonParam, $serviceParam), $this->accessKeySecret);
         $curl = new Curl();
         $rs = $curl->url($this->apiUrl)->data($sendParam)->accept('json')->post();
@@ -45,6 +39,7 @@ class DNS4ali
     }
     public function updateDomainRecord(String $recordId, String $rr, string $value, string $type = 'A', int $ttl = 600, int $priority = null, String $line = 'default') : bool
     {
+        $this->init();
         $serviceParam = [];
         $serviceParam['Action'] = 'UpdateDomainRecord';
         $serviceParam['RecordId'] = $recordId;
@@ -61,9 +56,9 @@ class DNS4ali
         $this->error = $rs['Message'] ?? null;
         return !isset($rs['Message']);
     }
-    public function updateDomainAByRR(string $domain, string $rr, string $ip)
+    public function updateRecord(string $domain, string $rr, string $value, $type = 'A')
     {
-        $domains = $this->getDomainRecords($domain);
+        $domains = $this->getRecords($domain);
         if(!$domains)
             return false;
         $recordId = null;
@@ -75,9 +70,9 @@ class DNS4ali
             $this->error = 'RR not found';
             return false;
         }
-        return $this->updateDomainRecord($recordId, $rr, $ip);
+        return $this->updateDomainRecord($recordId, $rr, $value, $type);
     }
-    private function initCommonParam()
+    private function init()
     {
         $format = 'JSON';
         $version = '2015-01-09';
@@ -95,23 +90,6 @@ class DNS4ali
             'SignatureVersion' => $signatureVersion,
             'SignatureNonce' => $signatureNonce,
         ];
-    }
-    public function domainRecordConst()
-    {
-        return new Class {
-            public $type_A = 'A';
-            public $type_NS = 'NS';
-            public $type_MX = 'MX';
-            public $type_TXT = 'TXT';
-            public $type_CNAME = 'CNAME';
-            public $type_SRV = 'SRV';
-            public $type_AAAA = 'AAAA';
-            public $type_CAA = 'CAA';
-            public $type_REDIRECT_URL = 'REDIRECT_URL';
-            public $type_FORWARD_URL = 'FORWARD_URL';
-            public $priority_min = 0;
-            public $priority_max = 10;
-        };
     }
     public function error()
     {
