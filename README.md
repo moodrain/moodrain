@@ -1,7 +1,7 @@
 MoodRain
 ==========
 
-> Chinese version [here](https://github.com/moodrain/moodrain/README_CN.md)
+> Chinese version [here](https://github.com/moodrain/moodrain/blob/master/README_CN.md)
 
 ## List：
 
