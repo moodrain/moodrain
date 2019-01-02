@@ -1,6 +1,9 @@
 <?php
 namespace Muyu;
 
+use Muyu\Support\Traits\MuyuExceptionTrait;
+use function Muyu\Support\Fun\conf;
+
 class FTP
 {
     private $host;
@@ -14,18 +17,14 @@ class FTP
     private $force;
     private $local;
     private $server;
-    private $error = '';
 
-    public function __construct(string $muyuConfig = 'ftp.default', bool $init = true)
-    {
+    use MuyuExceptionTrait;
+    function __construct($muyuConfig = 'ftp.default', $init = true) {
+        $this->initError();
         if($init)
-        {
-            $config = new Config();
-            $this->init($config($muyuConfig));
-        }
+            $this->init(conf($muyuConfig));
     }
-    public function init(array $config  = [])
-    {
+    function init($config  = []) {
         foreach($config as $key => $val)
             $this->$key = $val;
         $this->pass = base64_decode($config['pass'] ?? '');
@@ -34,26 +33,23 @@ class FTP
         ftp_login($this->conn, $this->user, $this->pass);
         if($this->pasv)
             ftp_pasv($this->conn, true);
-        if($this->prefix)
-        {
+        if($this->prefix) {
             $type = $this->type($this->prefix, false);
             if(!$type)
                 $this->mkdir($this->prefix, false);
             else if($type == 'file')
-                $this->error = 'prefix name is file';
+                $this->addError(13, 'prefix name is file');
         }
-        return $this->conn && !$this->error ? $this : false;
+        return $this->conn && $this->error->ok() ? $this : false;
     }
-    public function prefix(string $prefix = null)
-    {
-        if($prefix)
-        {
+    function prefix($prefix = null) {
+        if($prefix) {
             $type = $this->type($prefix, false);
             if(!$type)
                 $this->mkdir($this->prefix, false);
             else if($type == 'file')
-                $this->error = 'prefix name is file';
-            if(!$this->error)
+                $this->addError(13, 'prefix name is file');
+            if($this->error->ok())
                 $this->prefix = $prefix;
             else
                 return false;
@@ -61,90 +57,69 @@ class FTP
         }
         return $this->prefix;
     }
-    public function force(bool $force = null)
-    {
+    function force($force = null) {
         if($force === null)
             return $this->force;
-        else
-        {
+        else {
             $this->force = $force;
             return $this;
         }
     }
-    public function enforce()
-    {
+    function enforce() {
         $this->force = true;
         return $this;
     }
-    public function safe()
-    {
+    function safe() {
         $this->force = false;
         return $this;
     }
-    public function local($local = null)
-    {
-        if($local)
-        {
-            $this->local = $local;
-            return $this;
-        }
-        return $this->local;
+    function local($local = null) {
+        if(!$local)
+           return $this->local;
+        $this->local = $local;
+        return $this;
     }
-    public function server($server = null)
-    {
-        if($server)
-        {
-            $this->server = $server;
-            return $this;
-        }
-        return $this->server;
+    function server($server = null) {
+        if(!$server)
+            return $this->server;
+        $this->server = $server;
+        return $this;
     }
-    public function error() : string
-    {
-        return $this->error;
-    }
-    public function type(string $file = null, bool $withPrefix = true) : ?string
-    {
+    function type($file = null, $withPrefix = true) {
         $file = $file ?? $this->server;
         $file = ($this->prefix && $withPrefix) ? ($this->prefix . $file) : $file;
-        if(!$file)
-        {
-            $this->error = 'dir not set';
+        if(!$file) {
+            $this->addError(1, 'dir not set');
             return false;
         }
         $ll = $this->ll(dirname($file), false);
         $exist = false;
         $type  = null;
         foreach($ll as $l)
-            if($l[0] == basename($file))
-            {
+            if($l[0] == basename($file)) {
                 $exist = true;
                 $type = $l[1];
                 break;
             }
         return $exist ? $type : null;
     }
-    public function list(string $dir = null, bool $withPrefix = true)
-    {
+    function list($dir = null, $withPrefix = true) {
         $dir = $dir ?? $this->server;
         $dir = ($this->prefix && $withPrefix) ? ($this->prefix . $dir) : $dir;
         return @ftp_nlist($this->conn, $dir);
     }
-    public function ll(string $dir = null, bool $withPrefix = true)
-    {
+    function ll($dir = null, $withPrefix = true) {
         $dir = $dir ?? $this->server;
         $dir = ($this->prefix && $withPrefix) ? ($this->prefix . $dir) : $dir;
         $ll = @ftp_rawlist($this->conn, $dir);
         if($ll === false)
             return false;
         $files = [];
-        foreach($ll as $l)
-        {
+        foreach($ll as $l) {
             $l = explode(' ', $l);
             $name = $l[count($l)-1];
             $type = $l[0]{0};
-            switch($type)
-            {
+            switch($type) {
                 case '-': $type = 'file';break;
                 case 'd': $type = 'directory';break;
                 case 'l': $type = 'link';break;
@@ -156,155 +131,136 @@ class FTP
         }
         return $files;
     }
-    public function get(string $file = null, $local = null, bool $withPrefix = true) : bool
-    {
+    function get(string $file = null, $local = null, $withPrefix = true) {
         $file = $file ?? $this->server;
         $file = ($this->prefix && $withPrefix) ? $this->prefix . $file : $file;
         $local = $local ?? $this->local ?? basename($file);
-        if(!$file || !$local)
-        {
-            $this->error = 'local or server file not set';
+        if(!$file || !$local) {
+            $this->addError(2, 'local or server file not set');
             return false;
         }
         $type = $this->type($file, false);
         if(!$type)
-            $this->error = 'server file not found';
+            $this->addError(3, 'server file not found');
         else if($type == 'directory')
-            $this->error = 'request name is directory';
+            $this->addError(4, 'request name is directory');
         else if(is_resource($local))
             return @ftp_fget($this->conn, $local, $file, FTP_BINARY);
         else if(file_exists($local) && !$this->force)
-            $this->error = 'local file already exists';
+            $this->addError(5, 'local file already exists');
         else if(!file_exists(dirname($local)))
             Tool::mkdir(dirname($local));
-        if(!$this->error && !@ftp_get($this->conn, $local, $file, FTP_BINARY))
-            $this->error = 'download file fail';
-        return $this->error === '' ?  : false;
+        if($this->error->ok() && !@ftp_get($this->conn, $local, $file, FTP_BINARY))
+            $this->addError(6, 'download file fail');
+        return $this->error->ok();
     }
-    public function put($local = null, string $file = null, bool $withPrefix = true) : bool
-    {
+    function put($local = null, $file = null, $withPrefix = true) {
         $local = $local ?? $this->local;
         $file = $file ?? $this->server ?? basename($local);
         $file = ($this->prefix && $withPrefix) ? ($this->prefix . $file) : $file;
-        if(!$file || !$local)
-        {
-            $this->error = 'local or server file not set';
+        if(!$file || !$local) {
+            $this->addError(2, 'local or server file not set');
             return false;
         }
         $isResource = is_resource($local);
-        if(!$isResource && !file_exists($local))
-        {
-            $this->error = 'local file not found';
+        if(!$isResource && !file_exists($local)) {
+            $this->addError(7, 'local file not found');
             return false;
         }
         $type = $this->type($file, false);
-        if(!$type)
-        {
+        if(!$type) {
             $dirType = $this->type(dirname($file), false);
             if(!$dirType)
                 $this->mkdir(dirname($file), false);
             else if($dirType == 'file')
-                $this->error = 'duplicate name file exists';
+                $this->addError(8, 'duplicate name file exists');
         }
         else if($type == 'directory')
-            $this->error = 'duplicate name dir exists';
+            $this->addError(9, 'duplicate name dir exists');
         else if($type == 'file' && !$this->force)
-            $this->error = 'server file already exists';
-        if(!$this->error && !($isResource ? @ftp_fput($this->conn, $file, $local, FTP_BINARY) : @ftp_put($this->conn, $file, $local, FTP_BINARY)))
-            $this->error = 'upload file fail';
-        return $this->error === '';
+            $this->addError(10, 'server file already exists');
+        if($this->error->ok() && !($isResource ? @ftp_fput($this->conn, $file, $local, FTP_BINARY) : @ftp_put($this->conn, $file, $local, FTP_BINARY)))
+            $this->addError(11, 'upload file fail');
+        return $this->error->ok();
     }
-    public function mkdir(string $dir = null, bool $withPrefix = true) : bool
-    {
+    function mkdir($dir = null, $withPrefix = true) {
         $dir = $dir ?? $this->server;
         $dir = ($this->prefix && $withPrefix) ? $this->prefix . $dir : $dir;
-        if(!$dir)
-        {
-            $this->error = 'dir not set';
+        if(!$dir) {
+            $this->addError(1, 'dir not set');
             return false;
         }
         $type = $this->type($dir, false);
         if($type == 'directory' && !$this->force)
-            $this->error = 'server dir already exists';
+            $this->addError(12, 'server dir already exists');
         else if($type == 'file')
-            $this->error = 'duplicate name file exists';
-        else if(!$type)
-        {
-            if($this->prefix == null || $this->prefix == '/')
-            {
-                if(!$this->error && !@ftp_mkdir($this->conn, $dir))
-                    $this->error = 'mkdir fail';
-                return $this->error === '';
+            $this->addError(8, 'duplicate name file exists');
+        else if(!$type) {
+            if($this->prefix == null || $this->prefix == '/') {
+                if($this->error->ok() && !@ftp_mkdir($this->conn, $dir))
+                    $this->addError(14, 'mkdir fail');
+                return $this->error->ok();
             }
             $parentType = $this->type(dirname($dir), false);
             if(!$parentType && !$this->mkdir(dirname($dir), false))
                 return false;
             else if($parentType == 'file')
-                $this->error = 'duplicate name file exists';
-            else if(!$this->error && !@ftp_mkdir($this->conn, $dir))
-                $this->error = 'mkdir fail';
+                $this->addError(8, 'duplicate name file exists');
+            else if($this->error->ok() && !@ftp_mkdir($this->conn, $dir))
+                $this->addError(14, 'mkdir fail');
         }
-        return $this->error === '';
+        return $this->error->ok();
     }
-    public function rmdir(string $dir = null, bool $withPrefix = true) : bool
-    {
+    function rmdir($dir = null, $withPrefix = true) {
         $dir = $dir ?? $this->server;
         $dir = ($this->prefix && $withPrefix) ? $this->prefix . $dir : $dir;
-        if(!$dir)
-        {
-            $this->error = 'dir not set';
+        if(!$dir) {
+            $this->addError(1, 'dir not set');
             return false;
         }
         $type  = $this->type($dir, false);
-        if(!$type && !$this->force)
-        {
-            $this->error = 'server dir not exists';
+        if(!$type && !$this->force) {
+            $this->addError(15, 'server dir not exists');
             return false;
         }
         $ll = $this->ll($dir, false);
-        if(count($ll) && !$this->force)
-        {
-            $this->error = 'server dir not empty';
+        if(count($ll) && !$this->force) {
+            $this->addError(16, 'server dir not empty');
             return false;
         }
-        foreach($ll as $l)
-        {
+        foreach($ll as $l) {
             $name = $dir . '/' . $l[0];
             $type = $l[1];
-            if($type == 'file' && !$this->error && !@ftp_delete($this->conn, $name))
-                $this->error = 'del file fail';
+            if($type == 'file' && $this->error->ok() && !@ftp_delete($this->conn, $name))
+                $this->addError(17, 'del file fail');
             else if($type == 'directory')
                 $this->rmdir($name, false);
         }
-        if(!$this->error && !@ftp_rmdir($this->conn, $dir))
-            $this->error = 'rmdir fail';
-        return $this->error === '';
+        if($this->error->ok() && !@ftp_rmdir($this->conn, $dir))
+            $this->addError(18, 'rmdir fail');
+        return $this->error->ok();
     }
-    public function del(string $file = null, bool $withPrefix = true) : bool
-    {
+    function del($file = null, $withPrefix = true) {
         $file = $file ?? $this->server;
         $file = ($this->prefix && $withPrefix) ? $this->prefix . $file : $file;
-        if(!$file)
-        {
-            $this->error = 'dir not set';
+        if(!$file) {
+            $this->addError(1, 'dir not set');
             return false;
         }
         $type = $this->type($file, false);
         if(!$type && !$this->force)
-            $this->error = 'server file not found';
+            $this->addError(3, 'server file not found');
         else if($type == 'directory')
-            $this->error = 'request name is directory';
+            $this->addError(4, 'request name is directory');
         else if($type == 'file' && !@ftp_delete($this->conn, $file))
-            $this->error = 'del file fail';
-        return $this->error === '';
+            $this->addError(17, 'del file fail');
+        return $this->error->ok();
     }
-    public function close() : void
-    {
+    function close() {
         if(is_resource($this->conn))
             ftp_close($this->conn);
     }
-    public function __destruct()
-    {
+    function __destruct() {
         $this->close();
     }
 }

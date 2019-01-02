@@ -1,14 +1,12 @@
 <?php
 namespace Muyu\Support;
 
-use Muyu\Tool;
 class Ali
 {
-    public static function httpParam(array $params, string $accessKeySecret) : array
-    {
+    public static function httpParam($params, $accessKeySecret) {
         $method = 'POST';
         $aliHelper = new Class {
-            function urlEncode(string $str) : string {
+            function urlEncode($str) {
                 return str_replace('%7A', '~', str_replace('*', '%2A', str_replace('+' , '%20', urlencode($str))));
             }
         };

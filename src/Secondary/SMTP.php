@@ -1,5 +1,7 @@
 <?php
-namespace Muyu;
+namespace Muyu\Secondary;
+use Muyu\Support\Traits\MuyuExceptionTrait;
+use function Muyu\Support\Fun\conf;
 use PHPMailer\PHPMailer\PHPMailer;
 
 class SMTP
@@ -11,78 +13,68 @@ class SMTP
     private $encrypt;
     private $from;
     private $name;
-    private $to = [];
-    private $replyTo = [];
+    private $to;
+    private $replyTo;
     private $subject;
     private $html;
     private $text;
     private $mailer;
     private $error = '';
 
-    public function __construct(string $muyuConfig = 'smtp.default', bool $init = true)
-    {
+    use MuyuExceptionTrait;
+    public function __construct($muyuConfig = 'smtp.default', $init = true) {
+        $this->initError();
         if($init)
-        {
-            $config = new Config();
-            $this->init($config($muyuConfig));
-        }
+            $this->init(conf($muyuConfig));
     }
-    public function init(array $config)
-    {
+    public function init($config) {
+        $this->to = [];
+        $this->replyTo = [];
         foreach($config as $key => $val)
             $this->$key = $val;
         $this->pass = base64_decode($config['pass'] ?? '');
         return $this;
     }
-    public function from($mail, $name)
-    {
+    public function from($mail, $name) {
         $this->from = $mail;
         $this->name = $name;
         return $this;
     }
-    public function to($mail)
-    {
+    public function to($mail) {
         if(is_array($mail))
             $this->to = $mail;
         else
             $this->to[0] = $mail;
         return $this;
     }
-    public function replyTo($mail)
-    {
+    public function replyTo($mail) {
         if(is_array($mail))
             $this->replyTo = $mail;
         else
             $this->replyTo[0] = $mail;
         return $this;
     }
-    public function subject($subject)
-    {
+    public function subject($subject) {
         $this->subject = $subject;
         return $this;
     }
-    public function html($html)
-    {
+    public function html($html) {
         $this->html = $html;
         return $this;
     }
-    public function text($text)
-    {
+    public function text($text) {
         $this->text = $text;
         return $this;
     }
-    public function content($content)
-    {
+    public function content($content) {
         return $this->html('<p>' . $content . '</p>')->text(strip_tags($content));
     }
-    public function debug()
-    {
+    public function debug() {
         $mail = new PHPMailer();
         $mail->SMTPDebug = 2;
         return $this->send($mail);
     }
-    public function send(PHPMailer $mail = null)
-    {
+    public function send(PHPMailer $mail = null) {
         $this->mailer = $mail = $mail ?? new PHPMailer();
         $mail->isSMTP();
         $mail->SMTPAuth = true;
@@ -104,17 +96,11 @@ class SMTP
         $mail->AltBody = $this->text;
         return $mail->send();
     }
-    public function close()
-    {
+    public function close() {
         if($this->mailer)
             $this->mailer->smtpClose();
     }
-    public function __destruct()
-    {
+    public function __destruct() {
         $this->close();
-    }
-    public function error()
-    {
-        return $this->error;
     }
 }

@@ -1,6 +1,11 @@
 <?php
 namespace Muyu;
 
+use Muyu\Support\Tool;
+use Muyu\Support\Traits\MuyuExceptionTrait;
+use function Muyu\Support\Fun\conf;
+use Muyu\Support\HttpStatus;
+
 class OSS
 {
     private $accessKeyId;
@@ -17,37 +22,30 @@ class OSS
     private $authorization = '';
     private $pubKeyUrl = '';
     private $isVerified = false;
-    private $error = '';
 
-    public function __construct(string $muyuConfig = 'oss.default', bool $init = true)
-    {
+    use MuyuExceptionTrait;
+    function __construct($muyuConfig = 'oss.default', $init = true) {
+        $this->initError();
         if($init)
-        {
-            $config = new Config();
-            $this->init($config($muyuConfig));
-        }
+            $this->init(conf($muyuConfig));
     }
-    public function init(array $config)
-    {
+    function init($config) {
         foreach ($config as $key => $val)
             $this->$key = $val;
         return $this;
     }
-    public function policy(string $dir, string $callback, array $data = null) : string
-    {
+    function policy($dir, $callback, $data = null) {
         $response = $this->getPolicy($dir, $callback, $data);
         $response = json_encode(['code' => 200, 'msg' => '获取policy成功', 'data' => $response], JSON_UNESCAPED_UNICODE);
         if($this->cors)
             header('Access-Control-Allow-Origin: ', $this->cors);
         return $response;
     }
-    public function fileInfo() : array
-    {
+    function fileInfo() {
         $rawData = file_get_contents('php://input');
         $rawData = explode('&', $rawData);
         $fileInfo = [];
-        foreach($rawData as $r)
-        {
+        foreach($rawData as $r) {
             $r = explode('=', $r);
             $fileInfo[$r[0]] = $r[1];
         }
@@ -57,31 +55,26 @@ class OSS
             $fileInfo['data'] = json_decode(urldecode($fileInfo['data']),true);
         return $fileInfo;
     }
-    public function callback(callable $callback) : string
-    {
+    function callback(callable $callback) {
         try{
             $this->authorization = base64_decode($_SERVER['HTTP_AUTHORIZATION']);
             $this->pubKeyUrl = base64_decode($_SERVER['HTTP_X_OSS_PUB_KEY_URL']);
-        } catch (\Exception $e)
-        {
-            header("HTTP/1.1 403 Forbidden");
+        } catch (\Exception $e) {
+            $this->addError(1, 'callback auth fail');
+            header(HttpStatus::_403());
             exit();
         }
         $this->verify();
         $response = $callback($this->fileInfo());
         return $this->response($response);
     }
-    public function prefix(string $prefix = null)
-    {
-        if($prefix)
-        {
-            $this->prefix = $prefix;
-            return $this;
-        }
-        return $this->prefix;
+    function prefix($prefix = null) {
+        if(!$prefix)
+            return $this->prefix;
+        $this->prefix = $prefix;
+        return $this;
     }
-    public function get(string $file, string $query = null)
-    {
+    function get($file, $query = null) {
         $resource = '/' . $this->bucketName . '/' . ($this->prefix ? $this->prefix . '/' : '') . $file . $query;
         $url = $this->domain . '/' . ($this->prefix ? $this->prefix . '/' : '') . $file . $query;
         $curl = new Curl();
@@ -89,18 +82,14 @@ class OSS
             'Date' => Tool::gmt(),
             'Authorization' => $this->sign('get', $resource),
         ])->get();
-        $curl->close();
         return $content;
     }
-    public function put(string $from, string $to, string $contentType = null)
-    {
+    function put($from, $to, $contentType = null) {
         $resource = '/' . $this->bucketName . '/' . ($this->prefix ? $this->prefix . '/' : '') .  $to;
         $url = $this->domain . '/' . ($this->prefix ? $this->prefix . '/' : '') . $to;
         $contentMd5 = base64_encode(md5_file($from, true));
-        if(!$contentType)
-        {
-            switch (Tool::ext($from))
-            {
+        if(!$contentType) {
+            switch (Tool::ext($from)) {
                 case 'txt'  : $contentType = 'text/plain';break;
                 case 'html' : $contentType = 'text/html';break;
                 case 'xml'  : $contentType = 'application/xml';break;
@@ -122,11 +111,9 @@ class OSS
             'Content-Type' => $contentType,
             'Content-MD5' => $contentMd5,
         ])->put(false);
-        $curl->close();
-        return $rs->status() == 'HTTP/1.1 200 OK' ? true : $rs->content();
+        return $rs->status() == HttpStatus::_200() ? true : $rs->content();
     }
-    public function del(string $file)
-    {
+    function del($file) {
         $resource = '/' . $this->bucketName . '/' . ($this->prefix ? $this->prefix . '/' : '') . $file;
         $url = $this->domain . '/' . ($this->prefix ? $this->prefix . '/' : '') . $file;
         $curl = new Curl();
@@ -134,11 +121,9 @@ class OSS
             'Date' => Tool::gmt(),
             'Authorization' => $this->sign('delete', $resource),
         ])->delete(false);
-        $curl->close();
-        return $rs->status() == 'HTTP/1.1 204 No Content' ? true : $rs->content();
+        return $rs->status() == HttpStatus::_204() ? true : $rs->content();
     }
-    public function list(string $prefix = null) : array
-    {
+    function list($prefix = null) {
         $resource = '/' . $this->bucketName . '/';
         $url = $this->domain;
         $prefix = ($prefix && $prefix != '/' ? $prefix : null) ?? $this->prefix;
@@ -154,11 +139,9 @@ class OSS
         $finish = false;
         $trials = 10;
         $list = [];
-        while(!($finish || $trials <= 0))
-        {
+        while(!($finish || $trials <= 0)) {
             $result = $curl->get();
-            if(!$result)
-            {
+            if(!$result) {
                 $trials--;
                 if($trials == 0)
                     return null;
@@ -173,17 +156,14 @@ class OSS
             else if($result['IsTruncated'] == 'false')
                 $finish = true;
             if(!isset($result['Contents']))
-            {
-                $curl->close();
                 return [];
-            }
+            if(Tool::deep($result['Contents']) == 1)
+                $result['Contents'] = [$result['Contents']];
             $list = array_merge($list, $result['Contents']);
         }
-        $curl->close();
         return $list;
     }
-    private function getPolicy(string $dir, string $callback, array $data = null) : array
-    {
+    private function getPolicy($dir, $callback, $data = null) {
         $end = time() + $this->expire;
         $expiration = Tool::gmt_iso8601($end);
         $condition = ['content-length-range', 0, 1048576000];
@@ -195,15 +175,14 @@ class OSS
         $base64_policy = base64_encode($policy);
         $string_to_sign = $base64_policy;
         $signature = base64_encode(hash_hmac('sha1', $string_to_sign, $this->accessKeySecret, true));
-        $callback_param = array
-        (
+        $callback_param = [
             'callbackUrl' =>  $callback,
             'callbackBody' => 'filename=${object}&size=${size}&mimeType=${mimeType}&height=${imageInfo.height}&width=${imageInfo.width}&data=${x:data}',
             'callbackBodyType' => "application/x-www-form-urlencoded"
-        );
+        ];
         $callback_string = json_encode($callback_param);
         $base64_callback_body = base64_encode($callback_string);
-        $response = array();
+        $response = [];
         $response['accessKeyId'] = $this->accessKeyId;
         $response['address'] = $this->address;
         $response['policy'] = $base64_policy;
@@ -214,16 +193,13 @@ class OSS
         $response['data'] = $data;
         return $response;
     }
-    private function verify() : void
-    {
+    private function verify() {
         $authorization = $this->authorization;
         $pubKeyUrl = $this->pubKeyUrl;
         $curl = new Curl();
         $pubKey = $curl->url($pubKeyUrl)->get();
-        $curl->close();
-        if(!$pubKey)
-        {
-            header("HTTP/1.1 403 Forbidden");
+        if(!$pubKey) {
+            header(HttpStatus::_403());
             exit();
         }
         $body = file_get_contents('php://input');
@@ -235,32 +211,23 @@ class OSS
             $authStr = urldecode(substr($path, 0, $pos)).substr($path, $pos, strlen($path) - $pos)."\n".$body;
         if(openssl_verify($authStr, $authorization, $pubKey, OPENSSL_ALGO_MD5) == 1)
             $this->isVerified = true;
-        else
-        {
-            header("HTTP/1.1 403 Forbidden");
+        else {
+            header(HttpStatus::_403());
             exit();
         }
     }
-    private function response(array $response) : string
-    {
-        $response = isset($response) ? $response : ['code' => 200, 'msg' => 'success'];
+    private function response($response = ['code' => 200, 'msg' => 'success']) {
         if($this->isVerified)
             return json_encode($response, JSON_UNESCAPED_UNICODE);
-        else
-        {
-            header("http/1.1 403 Forbidden");
+        else {
+            header(HttpStatus::_403());
             exit();
         }
     }
-    private function sign(string $method, string $resource, string $contentType = null, string $contentMd5 = null) : string
-    {
+    private function sign($method, $resource, $contentType = null, $contentMd5 = null) {
         $method = strtoupper($method);
         $signature = base64_encode(hash_hmac('sha1', $method . "\n" . $contentMd5 . "\n" . $contentType . "\n" . Tool::gmt() . "\n" . $resource, $this->accessKeySecret, true));
         $authorization = 'OSS ' . $this->accessKeyId . ':' . $signature;
         return $authorization;
-    }
-    public function error()
-    {
-        return $this->error;
     }
 }

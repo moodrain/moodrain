@@ -1,24 +1,26 @@
 <?php
 namespace Muyu\Support\DNS;
 
+use Muyu\Support\Traits\MuyuExceptionTrait;
 use Muyu\Curl;
 use Muyu\Support\Ali;
-use Muyu\Tool;
+use Muyu\Support\ApiUrl;
+use Muyu\Support\Tool;
 class AliDNS
 {
     private $commonParam;
     private $accessKeyId;
     private $accessKeySecret;
-    private $error;
-    private $apiUrl = 'https://alidns.aliyuncs.com';
+    private $apiUrl;
 
-    public function __construct(array $config)
-    {
+    use MuyuExceptionTrait;
+    function __construct($config) {
+        $this->initError();
+        $this->apiUrl = ApiUrl::$urls['aliDNS'];
         foreach ($config as $key => $val)
             $this->$key = $val;
     }
-    public function getRecords(string $domainName, array $options = []) : array
-    {
+    function getRecords($domainName, $options = []) {
         $this->init();
         $serviceParam = [];
         $serviceParam['Action'] = 'DescribeDomainRecords';
@@ -34,11 +36,13 @@ class AliDNS
         $sendParam = Ali::httpParam(array_merge($this->commonParam, $serviceParam), $this->accessKeySecret);
         $curl = new Curl();
         $rs = $curl->url($this->apiUrl)->data($sendParam)->accept('json')->post();
-        $this->error = $rs['Message'] ?? null;
-        return $rs['DomainRecords']['Record'] ?? [];
+        if(!$rs)
+            $this->addError(1, 'request error', $curl->error());
+        else if(isset($rs['Message']) && $rs['Message'])
+            $this->addError(2, 'api error', null, $rs['Message']);
+        return $this->error->ok() ? $this->transformRecord($rs['DomainRecords']['Record']) : false;
     }
-    public function updateDomainRecord(String $recordId, String $rr, string $value, string $type = 'A', int $ttl = 600, int $priority = null, String $line = 'default') : bool
-    {
+    function updateDomainRecord($recordId, $rr, $value, $type = 'A', $ttl = 600, $priority = null, $line = 'default') {
         $this->init();
         $serviceParam = [];
         $serviceParam['Action'] = 'UpdateDomainRecord';
@@ -53,27 +57,31 @@ class AliDNS
         $sendParam = Ali::httpParam(array_merge($this->commonParam, $serviceParam), $this->accessKeySecret);
         $curl = new Curl();
         $rs = $curl->url($this->apiUrl)->data($sendParam)->accept('json')->post();
-        $this->error = $rs['Message'] ?? null;
-        return !isset($rs['Message']);
+        if(!$rs)
+            $this->addError(1, 'request error', $curl->error());
+        else if(isset($rs['Message']) && $rs['Message'])
+            $this->addError(2, 'api error', null, $rs['Message']);
+        return $this->error->ok() ? !isset($rs['Message']) : false;
     }
-    public function updateRecord(string $domain, string $rr, string $value, $type = 'A')
-    {
-        $domains = $this->getRecords($domain);
-        if(!$domains)
-            return false;
+    function updateRecord($domain, $rr, $value, $type = 'A') {
+        $domains = $this->getRecords($domain) ?? [];
         $recordId = null;
         foreach($domains as $domain)
-            if($domain['RR'] == $rr)
-                $recordId = $domain['RecordId'];
-        if(!$recordId)
-        {
-            $this->error = 'RR not found';
+            if($domain->rr == $rr)
+                $recordId = $domain->id;
+        if(!$recordId) {
+            $this->addError(3, 'record not found');
             return false;
         }
         return $this->updateDomainRecord($recordId, $rr, $value, $type);
     }
-    private function init()
-    {
+    private function transformRecord($records) {
+        $return = [];
+        foreach($records as $r)
+            $return[] = new Record($r['RecordId'], $r['Type'], $r['RR'], $r['Value'], $r['TTL']);
+        return $return;
+    }
+    private function init() {
         $format = 'JSON';
         $version = '2015-01-09';
         $accessKeyId = $this->accessKeyId;
@@ -90,9 +98,5 @@ class AliDNS
             'SignatureVersion' => $signatureVersion,
             'SignatureNonce' => $signatureNonce,
         ];
-    }
-    public function error()
-    {
-        return $this->error;
     }
 }

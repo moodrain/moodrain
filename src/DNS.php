@@ -1,22 +1,20 @@
 <?php
-namespace Muyu\Support;
+namespace Muyu;
 
-use Muyu\Config;
 use Muyu\Support\DNS\AliDNS;
 use Muyu\Support\DNS\CfDNS;
+use function Muyu\Support\Fun\conf;
 
 class DNS
 {
     private $provider;
     private $domain;
 
-    function __construct(string $muyuConfig = 'dns.default', bool $init = true) {
-        if($init) {
-            $config = new Config();
-            $this->init($config($muyuConfig));
-        }
+    function __construct($muyuConfig = 'dns.default', $init = true) {
+        if($init)
+            $this->init(conf($muyuConfig));
     }
-    function init(array $config){
+    function init($config) {
         foreach ($config as $key => $val)
             $this->$key = $val;
         switch($this->provider) {
@@ -29,23 +27,22 @@ class DNS
     function error() {
         return $this->provider->error();
     }
-    function domain(string $domain = null) {
+    function domain($domain = null) {
         if($domain) {
             $this->domain = $domain;
             return $this;
         }
         return $this->domain;
     }
-    function getRecords(array $options = []) {
+    function getRecords($options = []) {
         return $this->provider->getRecords($this->domain, $options);
     }
-    function getRecord(string $name) {
+    function getRecord($name) {
         return $this->provider->getRecords($this->domain, ['name' => $name])[0] ?? null;
     }
-    function updateRecord(string $name, string $value, string $type = 'A') {
+    function updateRecord($name, $value, $type = 'A') {
         return $this->provider->updateRecord($this->domain, $name, $value, $type);
     }
-
     static function ProviderType() {
         return new class {
             public $aliyun = 'aliyun';

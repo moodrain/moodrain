@@ -2,8 +2,10 @@
 /vendor/
 muyu.json
 index.php
+main.php
 composer.lock
 Caddyfile
 /config/
 /storage/mail/
 /storage/font/
+/src/Other/

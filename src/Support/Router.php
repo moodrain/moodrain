@@ -1,17 +1,17 @@
 <?php
 namespace Muyu\Support;
 
-use Muyu\Tool;
-
 class Router
 {
-    public function route(string $url = null, string $prefix = '')
-    {
+    public function route($url = null, $prefix = '') {
         $url = $url ?? $_SERVER['REQUEST_URI'];
+        if($prefix && strpos($url, $prefix) === false){
+            echo Tool::res(404,'页面不存在', null, 404);
+            exit();
+        }
         $url = $prefix ? Tool::strReplaceOnce($prefix, '', $url) : $url;
         $request = explode('/', $url);
-        foreach($request as $r)
-        {
+        foreach($request as $r) {
             if($r === '')
                 array_shift($request);
             else
@@ -19,8 +19,7 @@ class Router
         }
         echo $this->handle($request);
     }
-    private function handle(array $url)
-    {
+    private function handle($url) {
         if(count($url) <= 1)
             array_unshift($url, 'Index');
         $controller = ucfirst($url[0]);

@@ -3,48 +3,57 @@ namespace Muyu\Support;
 
 class HttpStatus
 {
-    public static function _200()
-    {
-        return 'HTTP/1.1 200 OK';
+    static $matches = [
+        '200' => 'HTTP/1.1 200 OK',
+        '204' => 'HTTP/1.1 204 No Content',
+        '301' => 'HTTP/1.1 301 Moved Permanently',
+        '302' => 'HTTP/1.1 302 Found',
+        '307' => 'HTTP/1.1 307 Temporary Redirect',
+        '308' => 'HTTP/1.1 308 Permanent Redirect',
+        '400' => 'HTTP/1.1 400 Bad Request',
+        '401' => 'HTTP/1.1 401 Unauthorized',
+        '403' => 'HTTP/1.1 403 Forbidden',
+        '404' => 'HTTP/1.1 404 Not Found',
+        '451' => 'HTTP/1.1 451 Unavailable For Legal Reasons',
+        '500' => 'HTTP/1.1 500 Internal Server Error',
+    ];
+    static function status($code) {
+        return self::$matches[(string)$code];
     }
-    public static function _301()
-    {
-        return 'HTTP/1.1 301 Moved Permanently';
+    static function _200() {
+        return self::status(200);
     }
-    public static function _302()
-    {
-        return 'HTTP/1.1 302 Found';
+    static function _204() {
+        return self::status(204);
     }
-    public static function _307()
-    {
-        return 'HTTP/1.1 307 Temporary Redirect';
+    static function _301() {
+        return self::status(301);
     }
-    public static function _308()
-    {
-        return 'HTTP/1.1 308 Permanent Redirect';
+    static function _302() {
+        return self::status(302);
     }
-    public static function _400()
-    {
-        return 'HTTP/1.1 400 Bad Request';
+    static function _307() {
+        return self::status(307);
     }
-    public static function _401()
-    {
-        return 'HTTP/1.1 401 Unauthorized';
+    static function _308() {
+        return self::status(308);
     }
-    public static function _403()
-    {
-        return 'HTTP/1.1 403 Forbidden';
+    static function _400() {
+        return self::status(400);
     }
-    public static function _404()
-    {
-        return 'HTTP/1.1 404 Not Found';
+    static function _401() {
+        return self::status(401);
     }
-    public static function _451()
-    {
-        return '451 Unavailable For Legal Reasons';
+    static function _403() {
+        return self::status(403);
     }
-    public static function _500()
-    {
-        return 'HTTP/1.1 500 Internal Server Error';
+    static function _404() {
+        return self::status(404);
+    }
+    static function _451() {
+        return self::status(451);
+    }
+    static function _500() {
+        return self::status(500);
     }
 }

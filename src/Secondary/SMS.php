@@ -1,7 +1,12 @@
 <?php
-namespace Muyu;
+namespace Muyu\Secondary;
 
+use Muyu\Curl;
+use Muyu\Support\Tool;
+use Muyu\Support\Traits\MuyuExceptionTrait;
 use Muyu\Support\Ali;
+use Muyu\Support\ApiUrl;
+use function Muyu\Support\Fun\conf;
 
 class SMS
 {
@@ -20,18 +25,14 @@ class SMS
     private $signatureNonce;
     private $outId;
     private $version;
-    private $error = '';
 
-    public function __construct(string $muyuConfig = 'sms.default', $init = true)
-    {
+    use MuyuExceptionTrait;
+    public function __construct($muyuConfig = 'sms.default', $init = true) {
+        $this->initError();
         if($init)
-        {
-            $config = new Config();
-            $this->init($config($muyuConfig));
-        }
+            $this->init(conf($muyuConfig));
     }
-    public function init(array $config) : SMS
-    {
+    public function init($config) {
         foreach ($config as $key => $val)
             $this->$key = $val;
         $this->signatureMethod = 'HMAC-SHA1';
@@ -45,40 +46,33 @@ class SMS
         $this->version = '2017-05-25';
         return $this;
     }
-    public function to($phone) : SMS
-    {
+    public function to($phone) {
         $this->phoneNumbers = is_array($phone) ? implode(',', $phone) : $phone;
         return $this;
     }
-    public function data(array $data) : SMS
-    {
+    public function data($data) {
         foreach($data as $key => $val)
             $data[$key] = strval($val);
         $this->templateParam = json_encode($data, JSON_UNESCAPED_UNICODE);
         return $this;
     }
-    public function send() : bool
-    {
+    public function send() {
         $params = [];
         foreach($this as $key => $val)
             $params[ucfirst($key)] = $val;
         unset($params['AccessKeySecret']);
         unset($params['Error']);
-        $url = 'https://dysmsapi.aliyuncs.com';
+        $url = ApiUrl::$urls['aliSNS'];
         $params = Ali::httpParam($params, $this->accessKeySecret);
         $curl = new Curl();
         $rs = $curl->url($url)->data($params)->accept('json')->post();
-        $curl->close();
-        if($rs['Code'] == 'OK')
-            return true;
-        else
-        {
-            $this->error = $rs['Message'];
+        if(!$curl) {
+            $this->addError(1, 'request error', $curl->error());
             return false;
         }
-    }
-    public function error() : string
-    {
-        return $this->error;
+        if($rs['Code'] == 'OK')
+            return true;
+        $this->addError(2, 'api error', null, $rs['Message']);
+        return false;
     }
 }

@@ -1,69 +1,79 @@
 <?php
 namespace Muyu\Support;
 
+use Muyu\Support\Traits\MuyuExceptionTrait;
+
 class Arr
 {
     private $arr;
 
-    function __construct(array $arr = []) {
+    use MuyuExceptionTrait;
+    function __construct($arr = []) {
+        $this->initError();
         $this->arr = $arr;
     }
     function __get($key) {
+        if(!isset($this->arr[$key]))
+            $this->addError(1, 'try to get a key not set');
         return $this->arr[$key] ?? null;
     }
     function __set($key, $val) {
         $this->arr[$key] = $val;
     }
     function get($key) {
-        return $this->arr[$key] :: null;
+        if(!isset($this->arr[$key]))
+            $this->addError(1, 'try to get a key not set');
+        return $this->arr[$key] ?? null;
     }
-    function set($key, $val) : Arr {
+    function set($key, $val) {
         $this->arr[$key] = $val;
         return $this;
     }
-    function del($key, bool $returnElem = false) {
-        $elem = $this->arr[$key];
+    function del($key, $returnElem = false) {
+        if(!isset($this->arr[$key]))
+            $this->addError(1, 'try to get a key not set');
+        $elem = $this->arr[$key] ?? null;
         unset($this->arr[$key]);
         return $returnElem ? $elem : $this;
     }
     function __unset($key) {
         unset($this->arr[$key]);
     }
-    function count() : int {
+    function count() {
         return count($this->arr);
     }
-    function arr() : array {
+    function arr() {
         return $this->arr;
     }
-    function slice(int $offset, int $limit) : Arr {
+    function slice($offset, $limit) {
         $this->arr = array_slice($this->arr, $offset, $limit);
         return $this;
     }
-    function reverse() : Arr {
+    function reverse() {
         $this->arr = array_reverse($this->arr);
         return $this;
     }
-    function merge(array $arr) : Arr {
+    function merge($arr) {
         $this->arr = array_merge($this->arr, $arr);
         return $this;
     }
-    function unshift($elem) : Arr {
+    function unshift($elem) {
         array_unshift($this->arr, $elem);
         return $this;
     }
-    function push($elem) : Arr {
+    function push($elem) {
         array_push($this->arr, $elem);
         return $this;
     }
-    function shift(bool $returnElem = false) {
+    function shift($returnElem = true) {
         $elem = array_shift($this->arr);
         return $returnElem ? $elem : $this;
     }
-    function pop(bool $returnElem = false) {
+    function pop($returnElem = true) {
         $elem = array_pop($this->arr);
         return $returnElem ? $elem : $this;
     }
-    function foreach(callable $function) : Arr {
+    function foreach(callable $function) {
         array_walk($this->arr, $function);
         return $this;
     }

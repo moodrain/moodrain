@@ -3,8 +3,7 @@ namespace Muyu\Support;
 
 class ConfigExample
 {
-    public function __construct()
-    {
+    public function __construct() {
         $ali = $this->ali = new \stdClass();
         $aliDef = $ali->default = new \stdClass();
         $aliDef->accessKeyId = '';
@@ -91,12 +90,10 @@ class ConfigExample
         $command->user = '';
         $command->pass = '';
     }
-    public function json() : string
-    {
+    public function json() {
         return json_encode($this, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
     }
-    public function save() : void
-    {
+    public function save() {
         file_put_contents('muyu.json', $this->json());
     }
 }

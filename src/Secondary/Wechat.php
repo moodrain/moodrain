@@ -1,9 +1,32 @@
 <?php
-namespace Muyu;
+namespace Muyu\Secondary;
+use Muyu\Config;
+use Muyu\Curl;
+use Muyu\Support\Traits\MuyuExceptionTrait;
+use Muyu\Support\ApiUrl;
+use function Muyu\Support\Fun\conf;
 use Muyu\Support\XML;
 
 class Wechat
 {
+/*
+$wechat = new Wechat('wechat.test');
+$wechat->addMsgHandler(function($msg) use ($wechat) {
+    if($wechat->isResponsed())
+        return;
+    echo $wechat->responseTextMsg($wechat->isSubscribeEvent() ? 'hello' : 'emm');
+});
+$wechat->response();
+*/
+/*
+$wechat = new Wechat('wechat.test');
+if(isset($_GET['code'])) {
+    $data = $wechat->getUserAccessToken();
+    dd($wechat->getUserInfo($data['openid'], $data['access_token']));
+}
+$wechat->getUserCode(true);
+// 启用此功能需要在微信测试号设置： 网页帐号	网页授权获取用户基本信息	无上限	修改，加上域名。
+ */
     private $appId;
     private $appSecret;
     private $token;
@@ -16,23 +39,19 @@ class Wechat
     private $receiveData;
     private $handler = [];
     private $isResponsed = false;
-    private $error = '';
 
-    public function __construct(string $muyuConfig = 'wechat.default', bool $init = true)
-    {
+    use MuyuExceptionTrait;
+    function __construct($muyuConfig = 'wechat.default', $init = true) {
+        $this->initError();
         $this->muyuConfig = $muyuConfig;
         if($init)
-        {
-            $config = new Config();
-            $this->init($config($muyuConfig));
-        }
+            $this->init(conf($muyuConfig));
     }
-    public function init(array $config) : void
-    {
+    function init($config) {
         foreach ($config as $key => $val)
             $this->$key = $val;
         $this->template =
-            "<xml>
+        "<xml>
             <ToUserName><![CDATA[%s]]></ToUserName>
             <FromUserName><![CDATA[%s]]></FromUserName>
             <CreateTime>%s</CreateTime>
@@ -41,60 +60,58 @@ class Wechat
             <FuncFlag>0</FuncFlag>
         </xml>";
     }
-    public function response() : void
-    {
+    function response() {
         foreach($this->handler as $handler)
             $handler($this->receiveData);
     }
-    public function addMsgHandler(callable $handler) : void
-    {
+    function addMsgHandler(callable $handler) {
         $this->handler[] = $handler;
     }
-    public function responseTextMsg(string $content) : string
-    {
-        if($this->isResponsed)
-        {
-            $this->error = 'try to response a message twice';
+    function responseTextMsg($content) {
+        if($this->isResponsed) {
+            $this->addError(1, 'try to response a message twice');
             return false;
         }
+        if(!$this->receiveData)
+            $this->receive();
         $data = $this->receiveData;
         $responseStr = sprintf($this->template, $data['fromUserName'], $data['toUserName'], time(), 'text', $content);
         $this->isResponsed = true;
         return $responseStr;
     }
-    public function getAccessToken() : string
-    {
+    function getAccessToken() {
         $config = new Config();
         $accessToken = $config($this->muyuConfig . '.accessToken', null);
         $expire = $config($this->muyuConfig . '.expire', null);
-        if(!$accessToken || time() > $expire)
-        {
+        if(!$accessToken || time() > $expire) {
             $curl = new Curl();
-            $data = $curl->url('https://api.weixin.qq.com/cgi-bin/token')->query([
+            $data = $curl->url(ApiUrl::$urls['wxToken'])->query([
                 'grant_type' => 'client_credential',
                 'appid' => $this->appId,
                 'secret' => $this->appSecret,
-            ])->receive('json')->get();
-            if(isset($data['errcode']))
-            {
+            ])->accept('json')->get();
+            if(!$data) {
+                $this->addError(1, 'request error', $curl->error());
+                return false;
+            }
+            $success = true;
+            if(isset($data['errcode']) && $data['errcode'] === -1) {
+                $success = false;
                 $try = 10;
-                if($data['errcode'] == -1)
-                {
-                    $pass = false;
-                    while($pass)
-                    {
-                        sleep(1);
-                        $data = $curl->get();
-                        $pass = !isset($data['errcode']);
-                        if($try-- <= 0)
-                        {
-                            $this->error = 'wechat server busy';
-                            break;
-                        }
+                while ($try-- > 0) {
+                    $data = $curl->get();
+                    if($data && $data['errcode'] === 0) {
+                        $success = true;
+                        break;
                     }
+                    else if($data && $data['errcode'] === -1)
+                        continue;
+                    else
+                        $this->addError(1, 'request error', $curl->error());
                 }
-                else
-                    $this->error = $data;
+            }
+            if(!$success) {
+                $this->addError(2, 'wechat server busy');
                 return false;
             }
             $accessToken = $data['access_token'];
@@ -106,84 +123,69 @@ class Wechat
         }
         return $accessToken;
     }
-    public function getUserCode(bool $needInfo = false) : void
-    {
-        if(!$this->getUserAccessTokenUrl)
-        {
+    function getUserCode($needInfo = false) {
+        if(!$this->getUserAccessTokenUrl) {
+            $this->addError(3, 'getUserAccessTokenUrl not set');
             echo 'getUserAccessTokenUrl not set';
-            exit();
+            return;
         }
         $redirectUrl = urlencode($this->getUserAccessTokenUrl);
         $scode = $needInfo ? 'snsapi_userinfo' : 'snsapi_base';
-        header("Location: https://open.weixin.qq.com/connect/oauth2/authorize?appid={$this->appId}&redirect_uri={$redirectUrl}&response_type=code&scope={$scode}&state=muyuchengfeng#wechat_redirect");
+        header("Location: '" . ApiUrl::$urls['wxUserCode'] . "'?appid={$this->appId}&redirect_uri={$redirectUrl}&response_type=code&scope={$scode}&state=muyuchengfeng#wechat_redirect");
     }
-    public function getUserAccessToken() : ?array
-    {
+    function getUserAccessToken() {
         $code = $_GET['code'] ?? null;
         $curl = new Curl();
-        $data = $curl->url('https://api.weixin.qq.com/sns/oauth2/access_token')->query([
+        $data = $curl->url(ApiUrl::$urls['wxUserToken'])->query([
             'appid' => $this->appId,
             'secret' => $this->appSecret,
             'code' => $code,
             'grant_type' => 'authorization_code',
-        ])->receive('json')->get();
-        $curl->close();
-        if(isset($data['errcode']))
-        {
-            $this->error = $data['errcode'] . $data['errmsg'];
-            return null;
+        ])->accept('json')->get();
+        if(isset($data['errcode']) && $data['errcode'] !== 0) {
+            $this->addError(4, 'api error', null, $data['errcode'] . ':' . $data['errmsg']);
+            return false;
         }
         return $data;
     }
-    public function getUserInfo(string $openId, string $userAccessToken) : ?array
-    {
+    function getUserInfo($openId, $userAccessToken) {
         $curl = new Curl();
         $data = $curl->url('https://api.weixin.qq.com/sns/userinfo')->query([
             'access_token' => $userAccessToken,
             'openid' => $openId,
             'lang' => 'zh_CN',
-        ])->receive('json')->get();
-        if(isset($data['errcode']))
-        {
-            $this->error = $data['errcode'] . $data['errmsg'];
-            return null;
+        ])->accept('json')->get();
+        if(isset($data['errcode']) && $data['errcode'] !== 0) {
+            $this->addError(4, 'api error', null, $data['errcode'] . ':' . $data['errmsg']);
+            return false;
         }
         return $data;
     }
-    public function authServer() : void
-    {
+    function authServer() {
         echo $_GET['echostr'];
         exit();
     }
-    public function receiveData(string $key = null)
-    {
+    function receiveData($key = null) {
         return $key ? $this->receiveData[$key] : $this->receiveData;
     }
-    public function msgHandler() : array
-    {
+    function msgHandler() {
         return $this->handler;
     }
-    public function isResponsed() : bool
-    {
+    function isResponsed() {
         return $this->isResponsed;
     }
-    public function isSubscribeEvent() : bool
-    {
+    function isSubscribeEvent() {
         return $this->receiveData['msgType'] == 'event' && $this->receiveData['event'] == 'subscribe';
     }
-    public function isUnSubscribeEvent() : bool
-    {
+    function isUnSubscribeEvent() {
         return $this->receiveData['msgType'] == 'event' && $this->receiveData['event'] == 'unsubscribe';
     }
-    public function isTextMsg() : bool
-    {
+    function isTextMsg() {
         return $this->receiveData['msgType'] == 'text';
     }
-    public function receive() : array
-    {
-        if(!$this->check())
-        {
-            $this->error = 'check() not pass';
+    function receive() {
+        if(!$this->check()) {
+            $this->addError(5, 'check not pass');
             return [];
         }
         $data = XML::parse(file_get_contents("php://input"));
@@ -195,21 +197,14 @@ class Wechat
         $this->toUserName = $this->receiveData['toUserName'];
         return $new;
     }
-    public function rawReceiveData() : string
-    {
-        if(!$this->check())
-        {
-            $this->error = 'check() not pass';
+    function rawReceiveData() {
+        if(!$this->check()) {
+            $this->addError(5, 'check not pass');
             return null;
         }
         return file_get_contents("php://input");
     }
-    public function error() : string
-    {
-        return $this->error;
-    }
-    public function check() : bool
-    {
+    function check() {
         $signature = $_GET["signature"] ?? null;
         $timestamp = $_GET["timestamp"] ?? null;
         $nonce = $_GET["nonce"] ?? null;

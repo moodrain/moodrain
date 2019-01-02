@@ -1,5 +1,10 @@
 <?php
-namespace Muyu;
+namespace Muyu\Secondary;
+
+use Muyu\Support\Tool;
+use Muyu\Support\Traits\MuyuExceptionTrait;
+use function Muyu\Support\Fun\conf;
+use PhpImap\Mailbox;
 
 class POP3
 {
@@ -10,66 +15,59 @@ class POP3
     private $path;
     private $attachPath;
     private $box;
-    private $list = [];
-    private $mails = [];
+    private $list;
+    private $mails;
     private $after;
     private $getAttach;
-    private $error = '';
 
-    public function __construct(string $muyuConfig = 'pop3.default', bool $init = true)
-    {
+    use MuyuExceptionTrait;
+    function __construct($muyuConfig = 'pop3.default', $init = true) {
+        $this->initError();
         if($init)
-        {
-            $config = new Config();
-            $this->init($config($muyuConfig));
-        }
+            $this->init(conf($muyuConfig), false);
     }
-    public function init(array $config)
-    {
+    function init($config, $getAttach) {
+        $this->list = [];
+        $this->mails = [];
         foreach ($config as $key => $val)
             $this->$key = $val;
         $this->pass = base64_decode($config['pass'] ?? '');
-        $this->error = 'box not init';
+        $this->addError(1, 'box not init');
+        if(!$this->initBox($getAttach)) {
+            $this->addError(5, 'init box fail');
+            return false;
+        }
         return $this;
     }
-    public function initBox(bool $getAttach = false) : bool
-    {
-        $this->error = '';
+    function initBox($getAttach = false) {
         $this->getAttach = $getAttach;
         Tool::timezone($config['timezone'] ?? 'PRC');
         $host = '{'. $this->host . ':' . ($this->port ?? 995) . '/pop/ssl}INBOX';
         $this->attachPath = $this->path . '/attach';
-        if(!file_exists($this->path))
-        {
+        if(!file_exists($this->path)) {
             Tool::mkdir($this->path);
-            if(!file_exists($this->path))
-            {
-                $this->error = 'mail dir not found';
+            if(!file_exists($this->path)) {
+                $this->addError(2, 'mail dir not found');
                 return false;
             }
         }
-        if($getAttach && $this->attachPath && !file_exists($this->attachPath))
-        {
+        if($getAttach && $this->attachPath && !file_exists($this->attachPath)) {
             Tool::mkdir($this->attachPath);
-            if(!file_exists($this->attachPath))
-            {
-                $this->error = 'attach dir not found';
+            if(!file_exists($this->attachPath)) {
+                $this->addError(3, 'attach dir not found');
                 return false;
             }
         }
-        $this->box = new \PhpImap\Mailbox($host, $this->user, $this->pass, $getAttach ? $this->attachPath : null);
+        $this->box = new Mailbox($host, $this->user, $this->pass, $getAttach ? $this->attachPath : null);
         $this->list = array_reverse($this->box->searchMailbox('ALL'));
         return true;
     }
-    public function list() : array
-    {
+    function list() {
         return $this->list;
     }
-    public function mails(bool $attach = false) : array
-    {
+    function mails($attach = false) {
         $news = [];
-        foreach ($this->list as $mailId)
-        {
+        foreach ($this->list as $mailId) {
             $mail = null;
             if(isset($this->mails[$mailId]))
                 $mail = $this->mails[$mailId];
@@ -81,10 +79,8 @@ class POP3
         }
         return $news;
     }
-    public function after($after = null)
-    {
-        if($after)
-        {
+    function after($after = null) {
+        if($after) {
             if(is_int($after))
                 $after = date('Y-m-d H:i:s', $after);
             else
@@ -94,8 +90,7 @@ class POP3
         }
         return $this->after;
     }
-    public function get(int $id)
-    {
+    function get($id) {
         if(!in_array($id, $this->list))
             return [];
         $mailInfo = @$this->box->getMail($id);
@@ -110,10 +105,8 @@ class POP3
         $mail->html = $mailInfo->textHtml;
         $files = [];
         $filesInfo = @$mailInfo->getAttachments();
-        if($this->getAttach)
-        {
-            foreach($filesInfo as $fileInfo)
-            {
+        if($this->getAttach) {
+            foreach($filesInfo as $fileInfo) {
                 $fileName = $fileInfo->name;
                 $replace = [
                     '/\s/' => '_',
@@ -124,11 +117,9 @@ class POP3
                 $dir = $this->attachPath . '/' . $mail->id;
                 $old = $this->attachPath . '/' . $mail->id . '_' . $fileInfo->id . '_' . preg_replace(array_keys($replace), $replace, $fileName);
                 $new = $dir . '/' . $fileName;
-                if(!file_exists($dir))
-                {
+                if(!file_exists($dir)) {
                     Tool::mkdir($dir);
-                    if(!file_exists($old) || !file_exists($dir))
-                    {
+                    if(!file_exists($old) || !file_exists($dir)) {
                         $this->error = 'attach remove error';
                         return false;
                     }
@@ -140,11 +131,9 @@ class POP3
         $mail->file = $files;
         return $mail;
     }
-    public function del(int $id) : bool
-    {
-        if(!in_array($id, $this->list))
-        {
-            $this->error = 'mail not found';
+    function del($id) {
+        if(!in_array($id, $this->list)) {
+            $this->addError(4, 'mail not found');
             return false;
         }
         if(isset($this->mails[$id]))
@@ -152,29 +141,20 @@ class POP3
         $this->box->deleteMail($id);
         return true;
     }
-    public function path() : string
-    {
+    function path() {
         return $this->path;
     }
-    public function attachPath() : string
-    {
+    function attachPath() {
         return $this->attachPath;
     }
-    public function box()
-    {
+    function box() {
         return $this->box;
     }
-    public function close() : void
-    {
+    function close() {
         if($this->box)
             $this->box->disconnect();
     }
-    public function error()
-    {
-        return $this->error;
-    }
-    public function __destruct()
-    {
+    function __destruct() {
         $this->close();
     }
 }

@@ -1,9 +1,11 @@
 <?php
 namespace Muyu;
 
+use Muyu\Support\Traits\MuyuExceptionTrait;
 use Box\Spout\Reader\ReaderFactory;
 use Box\Spout\Writer\WriterFactory;
 use Box\Spout\Common\Type;
+use Muyu\Support\Tool;
 
 class Excel
 {
@@ -15,40 +17,40 @@ class Excel
     private $to;
     private $iterator;
     private $data;
-    private $error = '';
-    private $firstSheet = true;
+    private $firstSheet;
 
-    public function __construct(string $file = null, string $sheet = null)
-    {
+    use MuyuExceptionTrait;
+    function __construct($file = null, $sheet = null) {
+        $this->initError();
+        $this->firstSheet = true;
         $this->file = $file;
         $this->sheet = $sheet ?? 'Sheet1';
         $this->ext = $file ? Tool::ext($file) : null;
+        $this->iterator = [];
     }
-    public function file(string $file = null)
-    {
+    function file($file = null) {
         if(!$file)
             return $this->file;
         $this->file = $file;
         return $this;
     }
-    public function sheet(string $sheet = null)
-    {
+    function sheet($sheet = null) {
         if(!$sheet)
             return $this->sheet;
         $this->sheet = $sheet;
         return $this;
     }
-    public function data(array $data = null)
-    {
+    function data($data = null) {
         if(!$data)
             return $this->data;
         $this->data = $data;
         return $this;
     }
-    public function toArray()
-    {
-        try
-        {
+    function to() {
+        return $this->to;
+    }
+    function toArray() {
+        try {
             $this->reader = $reader = $this->reader ?? ReaderFactory::create(Type::XLSX);
             $reader->open($this->file);
             $sheets = $reader->getSheetIterator();
@@ -63,43 +65,66 @@ class Excel
                     foreach($sheet->getRowIterator() as $row)
                         $data[] = $row;
             return $data;
-        } catch (\Exception $e) {$this->error = $e->getMessage();}
+        } catch (\Exception $e) {
+            $this->addError(1, 'read error', null, $e->getMessage());
+        }
         return false;
     }
-    public function next()
-    {
-        try
-        {
-            if (!$this->iterator)
-            {
-                $this->reader = $reader = $this->reader ?? ReaderFactory::create(Type::XLSX);
-                $reader->open($this->file);
-                $sheets = $reader->getSheetIterator();
+    function next() {
+        try {
+            if(!$this->reader) {
+                $this->reader = $this->reader ?? ReaderFactory::create(Type::XLSX);
+                $this->reader->open($this->file);
+            }
+            if (!isset($this->iterator[$this->sheet])) {
+                $sheets = $this->reader->getSheetIterator();
                 $sheet = null;
                 foreach($sheets as $sheetInfo)
                     if($sheetInfo->getName() == $this->sheet)
                         $sheet = $sheetInfo;
-                $this->iterator = $sheet->getRowIterator();
-                $this->iterator->rewind();
-                $row = $this->iterator->current();
-            } else
-            {
-                $this->iterator->next();
-                $row = $this->iterator->valid() ? $this->iterator->current() : false;
+                $this->iterator[$this->sheet] = $sheet->getRowIterator();
+                $this->iterator[$this->sheet]->rewind();
+                $row = $this->iterator[$this->sheet]->current();
+            } else {
+                $this->iterator[$this->sheet]->next();
+                $row = $this->iterator[$this->sheet]->valid() ? $this->iterator[$this->sheet]->current() : false;
             }
             return $row;
-        } catch (\Exception $e) {$this->error = $e->getMessage();}
+        } catch (\Exception $e) {
+            $this->addError(1, 'read error', null, $e->getMessage());
+        }
         return false;
     }
-    public function add(array $row)
-    {
-        if(!$this->writer)
-        {
-            $this->error = 'call add() before toFile() or toBrowser()';
+    function toFile($file = null) {
+        try {
+            $this->file = $file ?? $this->file;
+            $this->writer = $this->writer ?? WriterFactory::create(Type::XLSX);
+            $this->writer->openToFile($this->file);
+            $this->firstSheet = true;
+        } catch (\Exception $e) {
+            $this->addError(5, 'write error', null, $e->getMessage());
             return false;
         }
-        if($this->firstSheet)
-        {
+        return $this;
+    }
+    function toBrowser($file = null) {
+        try {
+            $this->file = $file ?? $this->file;
+            $this->writer = $this->writer ?? WriterFactory::create(Type::XLSX);
+            $this->writer->openToBrowser($this->file);
+            $this->firstSheet = true;
+        } catch (\Exception $e) {
+            $this->addError(5, 'write error', null, $e->getMessage());
+            return false;
+        }
+        return $this;
+    }
+    function add($row) {
+        if(!$this->writer) {
+            $this->addError(2, 'call add() before toFile() or toBrowser()');
+            return false;
+        }
+        if($this->firstSheet) {
             $sheet = $this->writer->getCurrentSheet();
             $sheet->setName($this->sheet);
             $this->firstSheet = false;
@@ -108,13 +133,11 @@ class Excel
         $sheets = [];
         foreach($sheetsInfo as $sheetInfo)
             $sheets[] = $sheetInfo->getName();
-        if(!in_array($this->sheet, $sheets))
-        {
+        if(!in_array($this->sheet, $sheets)) {
             $sheet = $this->writer->addNewSheetAndMakeItCurrent();
             $sheet->setName($this->sheet);
         }
-        else
-        {
+        else {
             $sheet = $this->writer->getCurrentSheet();
             foreach ($sheetsInfo as $sheetInfo)
                 if($sheetInfo->getName() == $this->sheet)
@@ -125,96 +148,62 @@ class Excel
             $this->writer->addRows($row);
         else if(Tool::deep($row) == 1)
             $this->writer->addRow($row);
-        else
-        {
-            $this->error = 'the row you add is not well format';
+        else {
+            $this->addError(3, 'the row you add is not well format');
             return false;
         }
     }
-    public function to() : string
-    {
-        return $this->to;
-    }
-    public function toFile(string $file = null)
-    {
-        try
-        {
-            $this->file = $file ?? $this->file;
-            $this->writer = $this->writer ?? WriterFactory::create(Type::XLSX);
-            $this->writer->openToFile($this->file);
-            $this->firstSheet = true;
-        } catch (\Exception $e) {$this->error = $e->getMessage();return false;}
-        return $this;
-    }
-    public function toBrowser(string $file = null)
-    {
-        try
-        {
-            $this->file = $file ?? $this->file;
-            $this->writer = $this->writer ?? WriterFactory::create(Type::XLSX);
-            $this->writer->openToBrowser($this->file);
-            $this->firstSheet = true;
-        } catch (\Exception $e) {$this->error = $e->getMessage();return false;}
-        return $this;
-    }
-    public function download() : bool
-    {
+    function download() {
         $this->to = 'browser';
         return $this->write();
     }
-    public function save() : bool
-    {
+    function save() {
         $this->to = 'file';
         return $this->write();
     }
-    public function close() : void
-    {
+    function close() {
         if($this->reader)
             $this->reader->close();
         if($this->writer)
             $this->writer->close();
     }
-    public function __destruct()
-    {
+    function __destruct() {
         $this->close();
     }
-    public function error() : string
-    {
-        return $this->error;
-    }
-    private function write() : bool
-    {
-        try
-        {
+    private function write() {
+        try {
             $this->writer = $writer = $this->writer ?? WriterFactory::create(Type::XLSX);
             if($this->to == 'file')
                 $writer->openToFile($this->file);
             else if($this->to == 'browser')
                 $writer->openToBrowser($this->file);
-            if(Tool::deep($this->data) == 3)
-            {
-                foreach($this->data as $sheetName => $sheetData)
-                {
-                    $sheet = $writer->getCurrentSheet();
+            if(Tool::deep($this->data) == 3) {
+                foreach($this->data as $sheetName => $sheetData) {
+                    if($this->firstSheet) {
+                        $sheet = $writer->getCurrentSheet();
+                        $this->firstSheet = false;
+                    }
+                    else
+                        $sheet = $writer->addNewSheetAndMakeItCurrent();
                     $sheet->setName($sheetName);
                     $writer->addRows($sheetData);
                 }
                 return true;
             }
-            else if(Tool::deep($this->data) == 2)
-            {
+            else if(Tool::deep($this->data) == 2) {
                 $sheet = $writer->getCurrentSheet();
                 $sheet->setName($this->sheet);
                 foreach ($this->data as $row)
                     $writer->addRow($row);
                 return true;
             }
-            else
-            {
-                $this->error = 'the data to write is not well format';
+            else {
+                $this->addError(4, 'the data to write is not well format');
                 return false;
             }
-        } catch (\Exception $e) {$this->error = $e->getMessage();}
+        } catch (\Exception $e) {
+            $this->addError(1, 'read error', null, $e->getMessage());
+        }
         return false;
     }
 }

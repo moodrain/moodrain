@@ -5,65 +5,41 @@ class MuyuException extends \Exception
 {
     private $detail;
     private $preException;
-    function __construct(int $code = 0, string $msg = '', $detail = null, $preException = null)
-    {
+    function __construct($code = 0,$msg = '', $preException = null, $detail = null) {
         $this->code = $code;
         $this->message = $msg;
         $this->detail = $detail;
         $this->preException = $preException;
     }
-
-    function ok() : bool
-    {
+    function ok() {
         return $this->code == 0;
     }
-
-    function code() : int
-    {
+    function code() {
         return $this->code;
     }
-
-    function msg() : string
-    {
+    function msg() {
         return $this->message;
     }
-
-    function detail()
-    {
+    function detail() {
         return $this->detail;
     }
-
-    function previous() : MuyuException
-    {
+    function previous() {
         return $this->preException;
     }
-
-    function add(MuyuException $pre, MuyuException $new) : MuyuException
-    {
-        if($this->ok())
-            return $new;
-        $new->preException = $pre;
-        return $new;
-    }
-
-    function trace() : array
-    {
+    function trace() {
         $trace = [$this];
         $current = $this;
-        while($current->preException != null)
-        {
+        while($current->preException != null) {
             $current = $current->preException;
             $trace[] = $current;
         }
         return $trace;
     }
-
-    function dd() : array
-    {
+    function dd() {
         $trace = $this->trace();
         $info = [];
         foreach ($trace as $e)
-            $info[] = ['code' => $e->code(), 'msg'=> $e->msg()];
+            $info[] = ['code' => $e->code(), 'msg'=> $e->msg(), 'detail' => $e->detail()];
         return $info;
     }
 }

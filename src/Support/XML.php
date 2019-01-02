@@ -3,8 +3,7 @@ namespace Muyu\Support;
 
 class XML
 {
-    public static function parse($xml)
-    {
+    public static function parse($xml) {
         $data = simplexml_load_string($xml, 'SimpleXMLElement', LIBXML_NOCDATA | LIBXML_NOBLANKS);
         if (is_object($data) && get_class($data) === 'SimpleXMLElement')
             $data = self::arrarval($data);
@@ -17,8 +16,7 @@ class XML
         $attr = '',
         $id = 'id'
     ) {
-        if (is_array($attr)) 
-        {
+        if (is_array($attr)) {
             $_attr = array();
             foreach ($attr as $key => $value) 
                 $_attr[] = "{$key}=\"{$value}\"";
@@ -31,12 +29,10 @@ class XML
         $xml  .= "</{$root}>";
         return $xml;
     }
-    public static function cdata($string)
-    {
+    public static function cdata($string) {
         return sprintf('<![CDATA[%s]]>', $string);
     }
-    private static function arrarval($data)
-    {
+    private static function arrarval($data) {
         if (is_object($data) && get_class($data) === 'SimpleXMLElement')
             $data = (array) $data;
         if (is_array($data))
@@ -44,13 +40,10 @@ class XML
                 $data[$index] = self::arrarval($value);
         return $data;
     }
-    private static function data2Xml(Array $data, $item = 'item', $id = 'id')
-    {
+    private static function data2Xml(Array $data, $item = 'item', $id = 'id') {
         $xml = $attr = '';
-        foreach ($data as $key => $val) 
-        {
-            if (is_numeric($key)) 
-            {
+        foreach ($data as $key => $val) {
+            if (is_numeric($key)) {
                 $id && $attr = " {$id}=\"{$key}\"";
                 $key = $item;
             }
