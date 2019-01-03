@@ -8,7 +8,7 @@ use PHPUnit\Framework\TestCase;
 final class OSSTest extends TestCase {
     static $tmpFile;
     static function setUpBeforeClass() {
-        Config::setPath(__DIR__ . '/../config/muyu.json');
+        Config::setPath('config/muyu.json');
         self::$tmpFile = uniqid() . '.tmp';
     }
     protected function setUp() {

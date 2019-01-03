@@ -8,7 +8,7 @@ use PHPUnit\Framework\TestCase;
 final class FTPTest extends TestCase {
     static $tmpFile;
     protected function setUp() {
-        Config::setPath(__DIR__ . '/../config/muyu.json');
+        Config::setPath('config/muyu.json');
         if(!conf('ftp', false))
             $this->markTestSkipped('ftp config not found');
         self::$tmpFile = uniqid() . '.tmp';

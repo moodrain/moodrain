@@ -8,7 +8,7 @@ use PHPUnit\Framework\TestCase;
 
 final class DNSTest extends TestCase {
     protected function setUp() {
-        Config::setPath(__DIR__ . '/../config/muyu.json');
+        Config::setPath('config/muyu.json');
         if(!conf('dns', false))
             $this->markTestSkipped('dns config not found');
     }
