@@ -9,3 +9,4 @@ Caddyfile
 /storage/mail/
 /storage/font/
 /src/Other/
+deploy.php
