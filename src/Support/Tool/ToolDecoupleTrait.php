@@ -205,4 +205,39 @@ trait ToolDecoupleTrait {
         }
         return getallheaders();
     }
+    static function setType(& $arr, $key, $type) {
+        $nextKey = function (& $str) {
+            $i = strpos($str, '.');
+            if($i === false) {
+                $tmp = $str;
+                $str = '';
+                return $tmp;
+            }
+            $key = substr($str, 0, $i);
+            $str = substr($str, $i + 1);
+            return $key;
+        };
+        $val = & $arr;
+        $k = $nextKey($key);
+        if($k == '*') {
+            foreach($val as & $v) {
+                self::setType($v, $key, $type);
+            }
+            return;
+        }
+        if($key === '') {
+            if(isset($val[$k]) && ! is_array($val[$k]) && ! is_object($val[$k])) {
+                switch($type) {
+                    case 'int':
+                    case 'integer': $val[$k] = (int) $val[$k];break;
+                    case 'str':
+                    case 'string': $val[$k] = (string) $val[$k];break;
+                    case 'bool':
+                    case 'boolean': $val[$k] = $val[$k] == 'true' ? true : false;break;
+                }
+            }
+        } else {
+            self::setType($arr[$k], $key, $type);
+        }
+    }
 }
