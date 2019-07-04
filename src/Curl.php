@@ -26,13 +26,15 @@ class Curl
     private $proxy;
     private $isJsonRequest;
 
+    private static $GlobalSetting = [];
+
     use MuyuExceptionTrait;
     function __construct($url = null) {
         $this->initError();
         $this->url = $url;
         $this->transfer = true;
         $this->timeout = 60;
-        $this->retryErrorCode = [28, 52];
+        $this->retryErrorCode = [28, 35, 52];
         $this->proxy = false;
         $this->isJsonRequest = false;
         $this->cookie = [];
@@ -341,6 +343,22 @@ class Curl
         curl_setopt($this->curl, CURLOPT_FOLLOWLOCATION, 0);
         curl_setopt($this->curl, CURLOPT_TIMEOUT, 60);
         curl_setopt($this->curl, CURLOPT_CONNECTTIMEOUT, 60);
+        foreach(self::$GlobalSetting as $key => $val) {
+            switch($key) {
+                case 'ss': $this->ss();break;
+                case 'retry': $this->retry($val);break;
+                case 'retryErrorCode': $this->retryErrorCode($val);break;
+                case 'cookie': $this->cookie($val);break;
+                case 'header': $this->header($val);break;
+                default: $this->addError(-1, 'unknown global setting: ' . $key);
+            }
+        }
+    }
+    static function setGlobalSetting(array $setting, $overwrite = false) {
+        if(!self::$GlobalSetting)
+            self::$GlobalSetting = $setting;
+        else if($overwrite)
+            self::$GlobalSetting = $setting;
     }
     function is404() {
         return $this->status() == HttpStatus::_404();

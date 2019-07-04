@@ -19,7 +19,6 @@ class SMTP
     private $html;
     private $text;
     private $mailer;
-    private $error = '';
 
     use MuyuExceptionTrait;
     public function __construct($muyuConfig = 'smtp.default', $init = true) {

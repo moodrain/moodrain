@@ -9,10 +9,11 @@ use Muyu\Support\Tool;
 class Downloader
 {
     use DownloaderTrait;
-    function __construct($url = null, $folder = null, $size = null) {
+    function __construct($url = null, $folder = null, $size = null, $cookie = null) {
         $this->url = $url;
         $this->size = $size ?? 9999;
         $this->folder = $folder;
+        $this->cookie = $cookie ?? [];
         set_time_limit(0);
         $this->folder = html_entity_decode(Tool::name($this->folder ?? 'E:/Download'));
         Tool::mkdir($this->folder);
@@ -52,6 +53,10 @@ class Downloader
     }
     function folder($folder) {
         $this->folder = $folder;
+        return $this;
+    }
+    function cookie($cookie) {
+        $this->cookie = $cookie;
         return $this;
     }
 }

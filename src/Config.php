@@ -7,7 +7,7 @@ use Muyu\Support\Traits\MuyuExceptionTrait;
 class Config
 {
     private static $config;
-    private static $path;
+    private static $path = 'muyu.json';
 
     use MuyuExceptionTrait;
     function __construct($config = null) {
