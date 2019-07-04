@@ -240,4 +240,10 @@ trait ToolDecoupleTrait {
             self::setType($arr[$k], $key, $type);
         }
     }
+    static function tap($return, $callable) {
+        if(is_callable($callable)) {
+            $callable();
+        }
+        return $return;
+    }
 }
