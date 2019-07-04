@@ -1,6 +1,8 @@
 <?php
 namespace Muyu\Support\Tool;
 
+use function Muyu\Support\Fun\ddd;
+
 trait ToolDecoupleTrait {
     static function dd($value) {
         if(is_array($value) && count($value) == 1)
@@ -140,35 +142,39 @@ trait ToolDecoupleTrait {
         @rmdir($dir);
     }
     static function scandir($dir, $recursion = true) {
+        $return = [];
+        $dir .= (substr($dir, -1) == '/' ? '' : '/');
         $files = scandir($dir);
         array_shift($files);
         array_shift($files);
         if($recursion) {
-            foreach($files as $index => & $file) {
-                $dir .= (substr($dir, -1) == '/' ? '' : '/');
+            foreach($files as & $file) {
                 $file = $dir . $file;
                 if(is_dir($file)) {
-                    unset($files[$index]);
-                    $files = array_merge($files, self::scandirHandle($file));
+                    $return = array_merge($return, self::scandirHandle($file));
+                } else {
+                    $return[] = $file;
                 }
             }
         }
         sort($files);
-        return $files;
+        return $return;
     }
     private static function scandirHandle($dir) {
+        $return = [];
+        $dir .= (substr($dir, -1) == '/' ? '' : '/');
         $files = scandir($dir);
         array_shift($files);
         array_shift($files);
         foreach($files as & $file) {
-            $dir .= (substr($dir, -1) == '/' ? '' : '/');
             $file = $dir . $file;
             if(is_dir($file)) {
-                unset($files[$index]);
-                $files = array_merge($files, self::scandirHandle($file));
+                $return = array_merge($return, self::scandirHandle($file));
+            } else {
+                $return[] = $file;
             }
         }
-        return $files;
+        return $return;
     }
     static function chromeForm2Array($form) {
         $form = trim($form);
