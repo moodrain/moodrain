@@ -196,7 +196,7 @@ class FTP
         $local = $local ?? $this->local;
         $file = $file ?? $this->server ?? basename($local);
         $file = ($this->prefix && $withPrefix) ? ($this->prefix . $file) : $file;
-        if(!$file || !$local) {
+        if(! $file || ! $local) {
             $this->addErr(self::el['fileNotSet'], $local, $file);
             return false;
         }
@@ -216,7 +216,7 @@ class FTP
         }
         $dir = dirname($file);
         $dirType = $this->type($dir, false);
-        if(! $dirType && $this->force) {
+        if(! $dirType && ! $this->force) {
             $this->addErr(self::el['noServerDir'], $dir);
         }
         if(! $this->mkdir($dir)) {
@@ -240,7 +240,7 @@ class FTP
         $dirArr = explode('/', $dir);
         $realDir = '';
         foreach($dirArr as $dirItem) {
-            $realDir .=  '/' . $dirItem;
+            $realDir =  $realDir ? ($realDir . '/' . $dirItem) : $dirItem;
             $type = $this->type($realDir, false);
             if($type == 'directory') {
                 continue;

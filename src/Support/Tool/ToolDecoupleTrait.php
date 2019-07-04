@@ -139,36 +139,36 @@ trait ToolDecoupleTrait {
         }
         @rmdir($dir);
     }
-    static function scandir($dir, $recursion = false, &$subDir = []) {
+    static function scandir($dir, $recursion = true) {
         $files = scandir($dir);
-        $count = count($files);
-        for($i = 0;$i < $count;$i++)
-            if($files[$i] == '.' || $files[$i] == '..')
-                unset($files[$i]);
-        $files = array_values($files);
-        $count = count($files);
-        if(!$recursion) {
-            for($i = 0;$i < $count;$i++)
-                if(is_dir($dir . '/' . $files[$i]))
-                    $files[$i] = ['name' => $files[$i], 'dir' => true, 'path' => $dir . '/' . $files[$i], 'files' => []];
-                else
-                    $files[$i] = ['name' => $files[$i], 'dir' => false, 'path' => $dir . '/' . $files[$i], 'files' => null];
-            return $files;
+        array_shift($files);
+        array_shift($files);
+        if($recursion) {
+            foreach($files as $index => & $file) {
+                $dir .= (substr($dir, -1) == '/' ? '' : '/');
+                $file = $dir . $file;
+                if(is_dir($file)) {
+                    unset($files[$index]);
+                    $files = array_merge($files, self::scandirHandle($file));
+                }
+            }
         }
-        $all = [];
-        static $first = true;
-        if($first) {
-            $first = false;
-            $subDir = &$all;
+        sort($files);
+        return $files;
+    }
+    private static function scandirHandle($dir) {
+        $files = scandir($dir);
+        array_shift($files);
+        array_shift($files);
+        foreach($files as & $file) {
+            $dir .= (substr($dir, -1) == '/' ? '' : '/');
+            $file = $dir . $file;
+            if(is_dir($file)) {
+                unset($files[$index]);
+                $files = array_merge($files, self::scandirHandle($file));
+            }
         }
-        for($i = 0;$i < $count;$i++) {
-            if(is_dir($dir . '/' . $files[$i])) {
-                $subDir[$i] = ['name' => $files[$i], 'dir' => true, 'path' => $dir . '/' . $files[$i], 'files' => []];
-                self::scandir($dir . '/' . $files[$i], true, $subDir[$i]['files']);
-            } else
-                $subDir[$i] = ['name' => $files[$i], 'dir' => false, 'path' => $dir . '/' . $files[$i], 'files' => null];
-        }
-        return $all;
+        return $files;
     }
     static function chromeForm2Array($form) {
         $form = trim($form);
