@@ -34,10 +34,17 @@ class FTP
         }
         $this->pass = base64_decode($config['pass'] ?? '');
         $this->force = false;
-        $this->conn = $this->ssl ? ftp_ssl_connect($this->host, $this->port) : ftp_connect($this->host, $this->port);
-        ftp_login($this->conn, $this->user, $this->pass);
+        $this->conn = $this->ssl ? @ftp_ssl_connect($this->host, $this->port) : @ftp_connect($this->host, $this->port);
+        if(! $this->conn) {
+            $this->addErr(self::el['connectFail']);
+            return false;
+        }
+        if(! @ftp_login($this->conn, $this->user, $this->pass)) {
+            $this->addErr(self::el['loginFail']);
+            return false;
+        }
         if($this->pasv) {
-            ftp_pasv($this->conn, true);
+            @ftp_pasv($this->conn, true);
         }
         if($this->prefix && ! $this->prefix($this->prefix)) {
             return false;
@@ -338,6 +345,8 @@ class FTP
         'rmFileFail'    => 'remove file fail: ?',
         'rmDirFail'     => 'remove dir fail: ?',
         'prefixIsFile'  => 'prefix dir is file: ?',
+        'connectFail'    => 'connect fail',
+        'loginFail'     => 'login fail',
     ];
 
 }
