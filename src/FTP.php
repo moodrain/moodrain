@@ -337,7 +337,7 @@ class FTP
         'serverDirFill' => 'server dir not empty: ?',
         'rmFileFail'    => 'remove file fail: ?',
         'rmDirFail'     => 'remove dir fail: ?',
-        'prefixIsFile'  => 'prefix dir is file',
+        'prefixIsFile'  => 'prefix dir is file: ?',
     ];
 
 }
