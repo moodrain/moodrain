@@ -91,7 +91,7 @@ class SMTP
             $mail->isHTML(true);
         $mail->CharSet = 'UTF-8';
         $mail->Subject = $this->subject;
-        $mail->Body = $this->html;
+        $mail->Body = $this->html ?? $this->text;
         $mail->AltBody = $this->text;
         return $mail->send();
     }
