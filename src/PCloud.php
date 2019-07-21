@@ -21,39 +21,71 @@ class PCloud {
     }
 
     public function init($config) {
-        foreach ($config as $key => $val)
+        foreach ($config as $key => $val) {
             $this->$key = $val;
+        }
         $this->pass = base64_decode($this->pass);
         $this->api = ApiUrl::$urls['pCloud'];
         return $this;
     }
 
     public function get($file) {
-        $link = $this->req('getFileLink', $file);
-        var_dump($link);
+        return file_get_contents('http://' . $this->link($file));
     }
 
-    public function put() {
-
+    public function link($file) {
+        $file = $this->req('getFileLink', ['path' => $file]);
+        return $file['hosts'][0] . $file['path'];
     }
 
-    public function del() {
-
+    public function put($local, $remote) {
+        return $this->req('uploadFile', [
+            'filename' => basename($remote),
+            'path' => str_replace('\\', '/', dirname($remote)),
+        ], $local)['result'] == 0;
     }
 
-    public function list($path) {
-        return $this->req('listFolder', ['path' => $path]);
+    public function del($file) {
+        return $this->req('deleteFile', ['path' => $file])['result'] == 0;
     }
 
-    public function req($action, $param) {
+    public function list($path, $withFolder = false) {
+        if(! $withFolder) {
+            $list = $this->req('listFolder', ['path' => $path])['metadata']['contents'];
+            foreach($list as $index => $item) {
+                if($item['isfolder']) {
+                    unset($list[$index]);
+                } else {
+                    $list[$index] = $item['path'];
+                }
+            }
+            return array_values($list);
+        } else {
+            return $this->req('listFolder', [
+                'path' => $path,
+                'recursive' => true,
+            ])['metadata']['contents'];
+        }
+    }
+
+    public function req($action, $param = [], $file = null) {
         $action = strtolower($action);
         $curl = new Curl($this->api);
-        return $curl->path($action)->data(array_merge([
+        if(isset($param['path']) && $param['path']) {
+            $param['path']{0} != '/' && ($param['path'] = '/' . $param['path']);
+        }
+        $param['filename'] = '';
+        var_dump($param);
+        $curl->path($action)->data(array_merge([
             'getauth' => 1,
             'logout' => 1,
             'username' => $this->user,
             'password' => $this->pass,
-        ], $param))->post();
+        ], $param))->accept('json');
+        $file && $curl->file(['file' => $file]);
+        $curl->post();
+        var_dump($curl->content());
+
     }
 
 

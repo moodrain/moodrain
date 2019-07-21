@@ -220,11 +220,15 @@ class Curl
                     if(is_array($data)) {
                         if($this->file) {
                             $files = [];
-                            foreach ($this->file as $key => $val)
-                                $files[$key] = new \CURLFile($val);
+                            foreach ($this->file as $key => $val) {
+                                $curlFile = new \CURLFile($val);
+                                $curlFile->setPostFilename($key);
+                                $files[$key] = $curlFile;
+                            }
                             $data = array_merge($this->data, $files);
                         }
                     }
+                    var_dump($data);exit;
                     curl_setopt($curl, CURLOPT_POSTFIELDS, $data);
                 }
                 break;
