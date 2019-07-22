@@ -39,10 +39,13 @@ class PCloud {
     }
 
     public function put($local, $remote) {
+        $name = basename($remote);
         return $this->req('uploadFile', [
-            'filename' => basename($remote),
             'path' => str_replace('\\', '/', dirname($remote)),
-        ], $local)['result'] == 0;
+        ], [
+            'file' => $local,
+            'name' => $name,
+        ])['result'] == 0;
     }
 
     public function del($file) {
@@ -74,18 +77,14 @@ class PCloud {
         if(isset($param['path']) && $param['path']) {
             $param['path']{0} != '/' && ($param['path'] = '/' . $param['path']);
         }
-        $param['filename'] = '';
-        var_dump($param);
         $curl->path($action)->data(array_merge([
             'getauth' => 1,
             'logout' => 1,
             'username' => $this->user,
             'password' => $this->pass,
         ], $param))->accept('json');
-        $file && $curl->file(['file' => $file]);
-        $curl->post();
-        var_dump($curl->content());
-
+        $file && $curl->file('file', $file['file'], $file['name']);
+        return $curl->post();
     }
 
 

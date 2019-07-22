@@ -40,6 +40,7 @@ class Curl
         $this->cookie = [];
         $this->header = [];
         $this->query = [];
+        $this->file = [];
         $this->initCurl();
     }
     function url($url = null) {
@@ -86,10 +87,20 @@ class Curl
         $this->data = $data;
         return $this;
     }
-    function file($file = null) {
-        if(!$file)
+    function file($key = null, $file = null, $name = null, $mime = null) {
+        if(! $key) {
             return $this->file;
-        $this->file = $file;
+        }
+        if(! $file) {
+            return $this->file[$key] ?? null;
+        }
+        $name = $name ?? basename($file);
+        $mime = $mime ?? mime_content_type($file);
+        $this->file[$key] = [
+            'file' => $file,
+            'name' => $name,
+            'mime' => $mime,
+        ];
         return $this;
     }
     function json($obj) {
@@ -220,15 +231,12 @@ class Curl
                     if(is_array($data)) {
                         if($this->file) {
                             $files = [];
-                            foreach ($this->file as $key => $val) {
-                                $curlFile = new \CURLFile($val);
-                                $curlFile->setPostFilename($key);
-                                $files[$key] = $curlFile;
+                            foreach ($this->file as $key => $file) {
+                                $files[$key] = new \CurlFile($file['file'], $file['mime'], $file['name']);
                             }
                             $data = array_merge($this->data, $files);
                         }
                     }
-                    var_dump($data);exit;
                     curl_setopt($curl, CURLOPT_POSTFIELDS, $data);
                 }
                 break;
@@ -236,9 +244,10 @@ class Curl
             case 'PUT': {
                 curl_setopt($curl, CURLOPT_CUSTOMREQUEST, "PUT");
                 if($this->file) {
+                    $file = $this->file[0]['file'];
                     curl_setopt($curl, CURLOPT_PUT, 1);
-                    $stream = fopen($this->file, 'r');
-                    $size = filesize($this->file);
+                    $stream = fopen($file, 'r');
+                    $size = filesize($file);
                     curl_setopt($curl, CURLOPT_INFILE, $stream);
                     curl_setopt($curl, CURLOPT_INFILESIZE, $size);
                 }
