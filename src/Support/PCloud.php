@@ -1,7 +1,7 @@
 <?php
-namespace Muyu;
+namespace Muyu\Support;
 
-use Muyu\Support\ApiUrl;
+use Muyu\Curl;
 use function Muyu\Support\Fun\conf;
 use Muyu\Support\Traits\MuyuExceptionTrait;
 

@@ -15,6 +15,7 @@ class Curl
     private $method;
     private $data;
     private $file;
+    private $stream;
     private $header;
     private $cookie;
     private $accept;
@@ -88,7 +89,7 @@ class Curl
         return $this;
     }
     function file($key = null, $file = null, $name = null, $mime = null) {
-        if(! $key) {
+        if($key === null) {
             return $this->file;
         }
         if(! $file) {
@@ -172,6 +173,13 @@ class Curl
         $this->proxy = $proxy;
         return $this;
     }
+    public function stream($file = null) {
+        if($file) {
+            $this->stream = $file;
+            return $this;
+        }
+        return $this->stream;
+    }
     function get($returnResult = true) {
         $this->method = 'GET';
         $rs = $this->handle($this->curl);
@@ -225,29 +233,26 @@ class Curl
         switch($this->method) {
             case 'GET': break;
             case 'POST':  {
-                curl_setopt($curl, CURLOPT_CUSTOMREQUEST, "POST");
-                if($this->data) {
-                    $data = $this->data;
-                    if(is_array($data)) {
-                        if($this->file) {
-                            $files = [];
-                            foreach ($this->file as $key => $file) {
-                                $files[$key] = new \CurlFile($file['file'], $file['mime'], $file['name']);
-                            }
-                            $data = array_merge($this->data, $files);
-                        }
+                curl_setopt($curl, CURLOPT_CUSTOMREQUEST, 'POST');
+                $data = $this->data ?? [];
+                if($this->file) {
+                    $files = [];
+                    foreach ($this->file as $key => $file) {
+                        $files[$key] = new \CurlFile($file['file'], $file['mime'], $file['name']);
                     }
-                    curl_setopt($curl, CURLOPT_POSTFIELDS, $data);
+                    $data = array_merge($data, $files);
                 }
+                curl_setopt($curl, CURLOPT_POSTFIELDS, $data);
                 break;
             }
             case 'PUT': {
                 curl_setopt($curl, CURLOPT_CUSTOMREQUEST, "PUT");
-                if($this->file) {
-                    $file = $this->file[0]['file'];
+                if($this->stream) {
+                    $file = $this->stream;
                     curl_setopt($curl, CURLOPT_PUT, 1);
                     $stream = fopen($file, 'r');
                     $size = filesize($file);
+                    empty($this->header['Content-Length']) && $this->header['Content-Length'] = $size;
                     curl_setopt($curl, CURLOPT_INFILE, $stream);
                     curl_setopt($curl, CURLOPT_INFILESIZE, $size);
                 }
@@ -269,8 +274,8 @@ class Curl
             }
         }
         if($this->proxy) {
-            curl_setopt($curl, CURLOPT_PROXYTYPE, CURLPROXY_SOCKS5_HOSTNAME);
-            curl_setopt($curl, CURLOPT_PROXY, $this->proxy);
+            $this->proxy['type'] == 'socks5' && curl_setopt($curl, CURLOPT_PROXYTYPE, CURLPROXY_SOCKS5_HOSTNAME);
+            curl_setopt($curl, CURLOPT_PROXY, $this->proxy['host']);
         }
         if($this->cookie) {
             $cookieStr = '';
@@ -359,6 +364,7 @@ class Curl
         foreach(self::$GlobalSetting as $key => $val) {
             switch($key) {
                 case 'ss': $this->ss();break;
+                case 'proxy': $this->proxy($val);break;
                 case 'retry': $this->retry($val);break;
                 case 'retryErrorCode': $this->retryErrorCode($val);break;
                 case 'cookie': $this->cookie($val);break;
@@ -380,7 +386,10 @@ class Curl
         return $this->status() == HttpStatus::_200();
     }
     function ss() {
-        $this->proxy('localhost:1080');
+        $this->proxy([
+            'type' => 'socks5',
+            'host' => 'localhost:1080',
+        ]);
         return $this;
     }
     function close() {
