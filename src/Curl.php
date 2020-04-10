@@ -30,7 +30,8 @@ class Curl
     private static $GlobalSetting = [];
 
     use MuyuExceptionTrait;
-    function __construct($url = null) {
+
+    public function __construct($url = null) {
         $this->initError();
         $this->url = $url;
         $this->transfer = true;
@@ -44,51 +45,70 @@ class Curl
         $this->file = [];
         $this->initCurl();
     }
-    function url($url = null) {
-        if(!$url)
+
+    public function url($url = null) {
+        if(! $url) {
             return $this->url;
+        }
         $this->url = $url;
         return $this;
     }
-    function fullUrl() {
+
+    public function fullUrl() {
         $url = $this->url;
-        if($this->path)
-            $url .= (($this->url{strlen($this->url)-1} == '/') ? '' : '/') . $this->path;
-        if($this->query)
+        if($this->path) {
+            if(substr($this->url, count($this->url) - 1) != '/') {
+                $url .= '/';
+            }
+            $url .= $this->path;
+        }
+        if($this->query) {
             $url .= '?' . http_build_query($this->query);
+        }
         return $url;
     }
-    function path($path = null) {
-        if(!$path)
+
+    public function path($path = null) {
+        if(! $path) {
             return $this->path;
+        }
         $this->path = $path;
         return $this;
     }
-    function query($query = null) {
-        if(!$query)
+
+    public function query($query = null) {
+        if(! $query) {
             return $this->query;
+        }
         $this->query = $query;
         return $this;
     }
-    function transfer($transfer = null) {
-        if($transfer === null)
+
+    public function transfer($transfer = null) {
+        if($transfer === null) {
             return $this->transfer;
+        }
         $this->transfer = $transfer;
         return $this;
     }
-    function accept($accept = null) {
-        if(!$accept)
+
+    public function accept($accept = null) {
+        if(! $accept) {
             return $this->accept;
+        }
         $this->accept = $accept;
         return $this;
     }
-    function data($data = null) {
-        if(!$data)
+
+    public function data($data = null) {
+        if(! $data) {
             return $this->isJsonRequest ? json_decode($this->data, true) : $this->data;
+        }
         $this->data = $data;
         return $this;
     }
-    function file($key = null, $file = null, $name = null, $mime = null) {
+
+    public function file($key = null, $file = null, $name = null, $mime = null) {
         if($key === null) {
             return $this->file;
         }
@@ -104,31 +124,39 @@ class Curl
         ];
         return $this;
     }
-    function json($obj) {
+
+    public function json($obj) {
         $this->data = json_encode($obj);
         $this->isJsonRequest = true;
         $this->header = array_merge($this->header, ['Content-Type' => 'application/json']);
         return $this;
     }
-    function cookie($cookie = null) {
-        if(!$cookie)
+
+    public function cookie($cookie = null) {
+        if(! $cookie) {
             return $this->cookie;
+        }
         $this->cookie = $cookie;
         return $this;
     }
-    function header($header = null) {
-        if(!$header)
+
+    public function header($header = null) {
+        if(! $header) {
             return $this->header;
+        }
         $this->header = $header;
         return $this;
     }
-    function responseHeader() {
+
+    public function responseHeader() {
         return $this->result['header'] ?? [];
     }
-    function isJsonRequest() {
+
+    public function isJsonRequest() {
         return $this->isJsonRequest;
     }
-    function responseCookie() {
+
+    public function responseCookie() {
         $cookie = [];
         foreach($this->result['header']['Set-Cookie'] as $info) {
             $info = explode(';', $info)[0];
@@ -138,41 +166,53 @@ class Curl
         }
         return $cookie;
     }
-    function status() {
+
+    public function status() {
         return $this->result['header']['Status'] ?? '';
     }
-    function title() {
+
+    public function title() {
         return Tool::strBetween($this->content(), '<title>', '</title>');
     }
-    function content() {
+
+    public function content() {
         return $this->result['content'] ?? '';
     }
-    function timeout($second = null) {
-        if(!$second)
+
+    public function timeout($second = null) {
+        if(! $second) {
             return $this->timeout;
+        }
         $this->timeout = $second;
         curl_setopt($this->curl, CURLOPT_TIMEOUT, $second);
         curl_setopt($this->curl, CURLOPT_CONNECTTIMEOUT, $second);
         return $this;
     }
-    function retry($times = null) {
-        if(!$times)
+
+    public function retry($times = null) {
+        if(! $times) {
             return $this->retry;
+        }
         $this->retry = $times;
         return $this;
     }
-    function retryErrorCode($errorCode = null) {
-        if(!$errorCode)
+
+    public function retryErrorCode($errorCode = null) {
+        if(! $errorCode) {
             return count($this->retryErrorCode) == 1 ? $this->retryErrorCode[0] : $this->retryErrorCode;
+        }
         $this->retryErrorCode = is_array($errorCode) ? $errorCode : [$errorCode];
         return $this;
     }
-    function proxy($proxy) {
-        if(!$proxy)
+
+    public function proxy($proxy) {
+        if(! $proxy) {
             return $this->proxy;
+        }
         $this->proxy = $proxy;
         return $this;
     }
+
     public function stream($file = null) {
         if($file) {
             $this->stream = $file;
@@ -180,34 +220,47 @@ class Curl
         }
         return $this->stream;
     }
-    function get($returnResult = true) {
+
+    public function get($returnResult = true) {
         $this->method = 'GET';
         $rs = $this->handle($this->curl);
         return $returnResult ? $rs : $this;
     }
-    function post($returnResult = true) {
+
+    public function post($returnResult = true) {
         $this->method = 'POST';
         $rs = $this->handle($this->curl);
         return $returnResult ? $rs : $this;
     }
-    function put($returnResult = true) {
+
+    public function put($returnResult = true) {
         $this->method = 'PUT';
         $rs = $this->handle($this->curl);
         return $returnResult ? $rs : $this;
     }
-    function delete($returnResult = true) {
+
+    public function delete($returnResult = true) {
         $this->method = 'DELETE';
         $rs = $this->handle($this->curl);
         return $returnResult ? $rs : $this;
     }
-    function patch($returnResult = true) {
+
+    public function patch($returnResult = true) {
         $this->method = 'PATCH';
         $rs = $this->handle($this->curl);
         return $returnResult ? $rs : $this;
     }
+
     private function format($raw) {
-        if($raw === null || $raw === false)
+        if($raw === null || $raw === false) {
             return $raw;
+        }
+        $headers = $this->responseHeader();
+        if(isset($headers['Content-Encoding'])) {
+            if(strpos($headers['Content-Encoding'], 'deflate') !== false) {
+                $raw = zlib_decode($raw);
+            }
+        }
         if($this->transfer) {
             if($this->accept) {
                 switch($this->accept) {
@@ -220,16 +273,19 @@ class Curl
                 $contentType = $this->responseHeader()['Content-Type'] ?? null;
                 switch ($contentType) {
                     case 'application/json': return json_decode($raw, true);
-                    case 'application/xml' : return XML::parse($raw);
+                    case 'application/xml' :
+                    case 'text/xml'        : return XML::parse($raw);
                     default                : return $raw;
                 }
             }
         }
         return $raw;
     }
+
     private function handle($curl, $redirect = false) {
-        if(!$redirect)
+        if(! $redirect) {
             curl_setopt($this->curl, CURLOPT_URL, $this->fullUrl());
+        }
         switch($this->method) {
             case 'GET': break;
             case 'POST':  {
@@ -292,13 +348,16 @@ class Curl
         $content = curl_exec($curl);
         if($this->retry) {
             $times = $this->retry;
-            while($times-- > 0 && in_array(curl_errno($curl), $this->retryErrorCode))
+            while($times-- > 0 && in_array(curl_errno($curl), $this->retryErrorCode)) {
                 $content = curl_exec($curl);
+            }
         }
-        if(curl_errno($curl) !== 0)
+        if(curl_errno($curl) !== 0) {
             $this->addError(curl_errno($curl));
-        if($content === null || $content === false)
+        }
+        if($content === null || $content === false) {
             return $content;
+        }
         $response = explode("\r\n", $content);
         $headers = [];
         $headers['Set-Cookie'] = [];
@@ -314,17 +373,19 @@ class Curl
                 $key = $header[0];
                 $val = $header[1] ?? null;
                 if($val == null && strlen($row) != 0) {
-                    if(strstr($key, '100'))
+                    if(strstr($key, '100')) {
                         $continue = true;
+                    }
                     if((strstr($key, '301') || strstr($key, '302') || strstr($key, '307') || strstr($key, '308')) && $redirectTime-- > 0) {
-                        foreach($response as $roww)
+                        foreach($response as $roww) {
                             if(strpos($roww, 'Location: ') !== false) {
                                 $url = str_replace('Location: ', '', $roww);
                                 $this->initCurl();
                                 curl_setopt($this->curl, CURLOPT_URL, $url);
                                 break;
                             }
-                        return $this->handle($this->curl, true);
+                            return $this->handle($this->curl, true);
+                        }
                     } else if($redirectTime <= 0) {
                         $this->addError(1, 'redirect too many times');
                         return false;
@@ -337,22 +398,27 @@ class Curl
                     continue;
                 }
                 if(strlen($row)) {
-                    if($key == 'Set-Cookie')
+                    if($key == 'Set-Cookie') {
                         $headers['Set-Cookie'][] = $val;
-                    else
+                    }
+                    else {
                         $headers[$key] = $val;
+                    }
                 }
-                else
+                else {
                     $endHeader = true;
+                }
             }
-            else
+            else {
                 $content .= $row . ($count == count($response) ? '' : "\r\n");
+            }
         }
         $this->result['header'] = $headers;
         $this->result['body'] = $content;
         $this->result['content'] = $this->format($content);
         return $this->content();
     }
+
     private function initCurl() {
         $this->curl = curl_init();
         curl_setopt($this->curl, CURLOPT_HEADER, 1);
@@ -373,30 +439,39 @@ class Curl
             }
         }
     }
-    static function setGlobalSetting(array $setting, $overwrite = false) {
-        if(!self::$GlobalSetting)
+
+    static public function setGlobalSetting(array $setting, $overwrite = false) {
+        if(! self::$GlobalSetting) {
             self::$GlobalSetting = $setting;
-        else if($overwrite)
+        }
+        else if($overwrite) {
             self::$GlobalSetting = $setting;
+        }
     }
-    function is404() {
+
+    public function is404() {
         return $this->status() == HttpStatus::_404();
     }
-    function is200() {
+
+    public function is200() {
         return $this->status() == HttpStatus::_200();
     }
-    function ss() {
+
+    public function ss() {
         $this->proxy([
             'type' => 'socks5',
             'host' => 'localhost:1080',
         ]);
         return $this;
     }
-    function close() {
-        if(is_resource($this->curl))
+
+    public function close() {
+        if(is_resource($this->curl)) {
             curl_close($this->curl);
+        }
     }
-    function __destruct() {
+
+    public function __destruct() {
         $this->close();
     }
 }
