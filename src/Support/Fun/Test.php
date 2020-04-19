@@ -1,4 +1,5 @@
 <?php
+
 namespace Muyu\Support\Fun;
 
 use Muyu\Curl;
@@ -15,13 +16,7 @@ function dd(...$elem) {
     Tool::dd($elem);
 }
 
-function ddd(...$elem) {
-    var_dump($elem);
-}
-
-function de(...$objs) {
-    foreach($objs as $obj) {
-        var_dump($obj->error()->dd());
-    }
+function de(...$elem) {
+    dd($elem);
     exit;
 }
