@@ -135,6 +135,7 @@ trait ToolDecoupleTrait {
         if($filename && !file_exists(dirname($filename))) {
             self::mkdir(dirname($filename));
         }
+        ! $filename && self::toImage('png');
         imagepng($im, $filename);
         imagedestroy($im);
     }
