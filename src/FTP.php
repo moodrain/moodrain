@@ -134,7 +134,11 @@ class FTP
         $dir = $dir ?? $this->server;
         $dir = ($this->prefix && $withPrefix) ? ($this->prefix . $dir) : $dir;
         $rs = @ftp_nlist($this->conn, $dir);
-        return $rs ? $rs : Tool::tap(false, $this->addErr(self::el['listFail'], $dir));
+        if(! $rs) {
+            $this->addErr(self::el['listFail'], $dir);
+            return false;
+        }
+        return $rs;
     }
 
     function ll($dir = null, $withPrefix = true) {
@@ -196,7 +200,11 @@ class FTP
     function get(string $file = null, $withPrefix = true) {
         $tmp = tempnam('', '');
         $rs = $this->enforce()->download($file, $tmp, $withPrefix);
-        return Tool::tap($rs ? file_get_contents($tmp) : false, unlink($tmp));
+        if(! $rs) {
+            unlink($tmp);
+            return false;
+        }
+        return file_get_contents($tmp);
     }
 
     function put($local = null, $file = null, $withPrefix = true) {

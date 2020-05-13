@@ -3,7 +3,7 @@ namespace Muyu\Support;
 
 class HttpStatus
 {
-    static $matches = [
+    const map = [
         '200' => 'HTTP/1.1 200 OK',
         '204' => 'HTTP/1.1 204 No Content',
         '301' => 'HTTP/1.1 301 Moved Permanently',
@@ -18,7 +18,7 @@ class HttpStatus
         '500' => 'HTTP/1.1 500 Internal Server Error',
     ];
     static function status($code) {
-        return self::$matches[(string)$code];
+        return self::map[(string)$code];
     }
     static function _200() {
         return self::status(200);

@@ -3,16 +3,7 @@ namespace Muyu\Support\Tool;
 
 trait ToolDecoupleTrait {
 
-    static public function dd($value) {
-        is_array($value) && count($value) == 1 ? var_dump($value[0]) : var_dump($value);
-    }
-
-    static public function de($value) {
-        self::dd($value);
-        exit;
-    }
-
-    static public function method() {
+    static public function httpMethod() {
         return $_SERVER['REQUEST_METHOD'] ?? null;
     }
 
@@ -25,6 +16,10 @@ trait ToolDecoupleTrait {
     static public function toDownload($filename) {
         header('Content-Type: application/octet-stream');
         header('Content-Disposition: attachment; filename="' . $filename . '"');
+    }
+
+    static public function toImage($ext) {
+
     }
 
     static public function uuid() {
@@ -40,14 +35,6 @@ trait ToolDecoupleTrait {
     static public function dirFilter($dirname) {
         $filter = ['[', '\\', '/', ':', '*', '?', '"', '<', '>', '|', ']', "'"];
         return self::name(str_replace($filter, '', $dirname));
-    }
-
-    static public function ignoreCn($str) {
-        return preg_replace('/([\x80-\xff]*)/i','',$str);
-    }
-
-    static public function hasCn($str) {
-        return preg_match('/([\x81-\xfe][\x40-\xfe])/', $str);
     }
 
     static public function strReplaceOnce($find, $replace, $string) {
@@ -71,8 +58,11 @@ trait ToolDecoupleTrait {
         date_default_timezone_set($timezone);
     }
 
-    static public function date() {
-        return date('Y-m-d H:i:s');
+    static public function defineTime() {
+        define('DATE', date('Y-m-d'));
+        define('TIME', date('H:i:s'));
+        define('DATETIME', date('Y-m-d H:i:s'));
+        define('UNIX_TIME', time());
     }
 
     static public function rand($array) {
@@ -119,10 +109,6 @@ trait ToolDecoupleTrait {
         return $containKw ? $kw1 . $rs . $kw2 : $rs;
     }
 
-    static public function isSet($key, $array) {
-        return array_key_exists($key, $array);
-    }
-
     static public function ext($filename) {
         $info = explode('.', basename($filename));
         return $info[count($info)-1] ?? null;
@@ -136,8 +122,9 @@ trait ToolDecoupleTrait {
         return substr($filename, 0, $index);
     }
 
-    static public function textToImg($text, $filename = null, $fontSize = 20, $fontColor = [0, 0, 0], $fontType = __DIR__ . '/../storage/font/simyou.ttf') {
-        $im = imagecreatetruecolor(strlen($text) * $fontSize * (self::hasCn($text) ? 5/11 : 2/3), (substr_count($text, "\n")+1) * $fontSize * 31/22);
+    static public function textToImg($text, $filename = null, $fontSize = 20, $fontColor = [0, 0, 0], $fontType = __DIR__ . '/../../../storage/font/simyou.ttf') {
+        $hasCn = preg_match('/([\x81-\xfe][\x40-\xfe])/', $text);
+        $im = imagecreatetruecolor(strlen($text) * $fontSize * ($hasCn ? 5/11 : 2/3), (substr_count($text, "\n")+1) * $fontSize * 31/22);
         imagesavealpha($im, true);
         $color = imagecolorallocatealpha($im, 0, 0, 0, 127);
         imagefill($im, 0, 0, $color);
@@ -185,18 +172,6 @@ trait ToolDecoupleTrait {
         return $return;
     }
 
-    static public function chromeForm2Array($form) {
-        $form = trim($form);
-        $keyValues = explode(PHP_EOL, $form);
-        $array = [];
-        foreach($keyValues as $keyValue) {
-            [$key, $value] = explode(':', $keyValue);
-            $key = trim($key);
-            $value = trim($value);
-            $array[$key] = $value;
-        }
-        return $array;
-    }
 
     static public function gmt($time = null) {
         $time = $time ?? time();
@@ -257,13 +232,6 @@ trait ToolDecoupleTrait {
         } else {
             self::setType($arr[$k], $key, $type);
         }
-    }
-
-    static public function tap($return, $callable) {
-        if(is_callable($callable)) {
-            $callable();
-        }
-        return $return;
     }
 
 }

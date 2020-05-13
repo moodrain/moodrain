@@ -1,7 +1,6 @@
 <?php
 namespace Muyu;
 
-use Muyu\Support\Tool;
 use Muyu\Support\Traits\MuyuExceptionTrait;
 
 class Config
@@ -129,7 +128,7 @@ class Config
         file_put_contents(self::$path, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
     }
     function __invoke(...$paras) {
-        return Tool::isSet(1, $paras) ? $this->try($paras[0], $paras[1]) : $this->get($paras[0]);
+        return array_key_exists(1, $paras) ? $this->try($paras[0], $paras[1]) : $this->get($paras[0]);
     }
     function dump() {
         var_dump(self::$config);
