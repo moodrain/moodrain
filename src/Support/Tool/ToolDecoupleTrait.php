@@ -1,6 +1,8 @@
 <?php
 namespace Muyu\Support\Tool;
 
+use Muyu\Support\Mime;
+
 trait ToolDecoupleTrait {
 
     static public function httpMethod() {
@@ -19,7 +21,7 @@ trait ToolDecoupleTrait {
     }
 
     static public function toImage($ext) {
-
+        header('Content-Type: ' . Mime::mime($ext));
     }
 
     static public function uuid() {
