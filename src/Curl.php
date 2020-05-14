@@ -4,7 +4,7 @@ namespace Muyu;
 use Muyu\Support\Tool;
 use Muyu\Support\Traits\MuyuExceptionTrait;
 use Muyu\Support\HttpStatus;
-use Muyu\Support\XML;
+use Muyu\Support\Base\XML;
 
 class Curl
 {

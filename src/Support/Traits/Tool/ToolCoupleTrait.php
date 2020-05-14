@@ -1,8 +1,7 @@
 <?php
 
-namespace Muyu\Support\Tool;
+namespace Muyu\Support\Traits\Tool;
 
-use function Muyu\Support\Fun\conf;
 use Muyu\Support\Seeder;
 use \PDO;
 

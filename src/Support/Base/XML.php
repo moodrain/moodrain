@@ -1,5 +1,5 @@
 <?php
-namespace Muyu\Support;
+namespace Muyu\Support\Base;
 
 class XML
 {

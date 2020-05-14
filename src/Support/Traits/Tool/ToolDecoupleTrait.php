@@ -1,5 +1,5 @@
 <?php
-namespace Muyu\Support\Tool;
+namespace Muyu\Support\Traits\Tool;
 
 use Muyu\Support\Mime;
 

@@ -1,7 +1,9 @@
 <?php
+
 namespace Muyu\Support;
-use Muyu\Support\Tool\ToolCoupleTrait;
-use Muyu\Support\Tool\ToolDecoupleTrait;
+
+use Muyu\Support\Traits\Tool\ToolCoupleTrait;
+use Muyu\Support\Traits\Tool\ToolDecoupleTrait;
 
 
 class Tool

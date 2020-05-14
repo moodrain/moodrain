@@ -1,4 +1,5 @@
 <?php
+
 namespace Muyu\Support\Traits;
 
 use Muyu\Support\MuyuException;
