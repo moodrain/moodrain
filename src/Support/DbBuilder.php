@@ -2,7 +2,6 @@
 namespace Muyu\Support;
 
 use Muyu\Support\Traits\MuyuExceptionTrait;
-use function Muyu\Support\Fun\conf;
 
 class DbBuilder
 {

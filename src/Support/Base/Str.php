@@ -1,6 +1,6 @@
 <?php
 
-namespace Illuminate\Support;
+namespace Muyu\Support\Base;
 
 class Str
 {

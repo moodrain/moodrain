@@ -1,6 +1,6 @@
 <?php
 
-$dir = __DIR__ . '/';
+$dir = __DIR__ . '/../';
 
 $require = function($path) use ($dir) {
     require $dir . $path;

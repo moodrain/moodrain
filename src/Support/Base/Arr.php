@@ -1,6 +1,6 @@
 <?php
 
-namespace Illuminate\Support;
+namespace Muyu\Support\Base;
 
 use ArrayAccess;
 use InvalidArgumentException;
@@ -643,5 +643,12 @@ class Arr
         }
 
         return is_array($value) ? $value : [$value];
+    }
+
+    public static function sort($array, $callback = null)
+    {
+        $newArr = $array;
+        usort($newArr, $callback);
+        return $newArr;
     }
 }

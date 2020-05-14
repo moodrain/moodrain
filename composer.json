@@ -20,7 +20,7 @@
             "Muyu\\": "src/"
         },
         "files": [
-            "src/Support/Fun/helper.php"
+            "src/Support/Helpers/helper.php"
         ]
     }
 }

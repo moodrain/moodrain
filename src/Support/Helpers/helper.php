@@ -1,8 +1,11 @@
 <?php
 
-use Illuminate\Support\Arr;
+use Muyu\Support\Base\Arr;
 use Muyu\Config;
 use Muyu\Curl;
+
+require_once __DIR__ . '/arrHelper.php';
+require_once __DIR__ . '/strHelper.php';
 
 function conf(...$e) {
     static $conf = null;
