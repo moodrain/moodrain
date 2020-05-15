@@ -14,8 +14,8 @@ function genConn($muyuConfig = 'default', $conf = []) {
 }
 
 function dbQuery($sql, $para = [], $page = null, $limit = 20) {
-    $stmt = db()->prepare($sql);
     $page !== null && $sql .= ' limit ' . ($page - 1) * $limit . ',' . $limit;
+    $stmt = db()->prepare($sql);
     $stmt->execute($para);
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
