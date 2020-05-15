@@ -6,6 +6,7 @@ use Muyu\Curl;
 
 require_once __DIR__ . '/arrHelper.php';
 require_once __DIR__ . '/strHelper.php';
+require_once __DIR__ . '/dbHelper.php';
 
 function conf(...$e) {
     static $conf = null;
@@ -16,6 +17,82 @@ function conf(...$e) {
         return $conf($e[0], $e[1]);
     }
 }
+
+function app_loader() {
+    spl_autoload_register(function($className) {
+        $prefix = 'App';
+        $nameSpaces = explode('\\', $className);
+        if(array_shift($nameSpaces) != $prefix) {
+            return;
+        }
+        $baseName = array_pop($nameSpaces);
+        $path = 'app/' . implode('/', $nameSpaces) . '/' . $baseName . '.php';
+        if(! file_exists(ROOT . $path)) {
+            throw new \Exception('class not found: ' . $className);
+        }
+        require ROOT . $path;
+    });
+}
+
+function now($unix = false) {
+    return $unix ? time() : date('Y-m-d H:i:s');
+}
+
+function rs($p1 = null, $p2 = null, $p3 = null) {
+    $code = 0;
+    $msg = '';
+    $data = null;
+    if(is_array($p1) || is_object($p1) || is_null($p1)) {
+        $data = $p1;
+    }
+    if(is_string($p1)) {
+        $msg = $p1;
+    } else if(is_string($p2)) {
+        $msg = $p2;
+    }
+    if(is_int($p1)) {
+        $code = $p1;
+    } else if(is_int($p2)) {
+        $code = $p2;
+    } else if(is_int($p3)) {
+        $code = $p3;
+    }
+    return compact('code', 'msg', 'data');
+}
+
+function ers($msg = '', $code = 1, $data = null) {
+    return rs($data, $msg, $code);
+}
+
+function mvc_render($raw) {
+    header('Content-Type: application/json');
+    echo json_encode($raw, JSON_UNESCAPED_UNICODE);
+}
+
+function mvc_get_controller_action() {
+    if(! empty($_REQUEST['c'])) {
+        return [$_REQUEST['c'], $_REQUEST['a'] ?? 'index'];
+    } else if(! empty($_REQUEST['a'])) {
+        $action = explode('/', $_REQUEST['a']);
+        count($action) == 1 && array_unshift($action, 'index');
+        return $action;
+    } else {
+        return ['index', 'index'];
+    }
+}
+
+function mvc_do_action($controller, $action) {
+    $controllerName = 'App\\Controller\\' . ucfirst($controller) . 'Controller';
+    $controller = new $controllerName;
+    return call_user_func([$controller, $action], Arr::except($_REQUEST, ['a', 'c']));
+}
+
+function mvc_on() {
+    $rs = mvc_do_action(...mvc_get_controller_action());
+    (empty($rs['code']) || empty($rs['msg']) || empty($rs['data'])) && $rs = rs($rs);
+    mvc_render($rs);
+}
+
 
 function curl($url) {
     $curl = new Curl($url);

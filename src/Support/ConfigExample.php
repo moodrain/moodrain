@@ -17,23 +17,6 @@ class ConfigExample
         $bwhDef->rr = '';
         $bwhDef->mail = '';
 
-        $oss = $this->oss = new \stdClass();
-        $ossDef = $oss->default = new \stdClass();
-        $ossDef->accessKeyId = '';
-        $ossDef->accessKeySecret = '';
-        $ossDef->address = '';
-        $ossDef->domain = '';
-        $ossDef->bucketName = '';
-        $ossDef->endPoint = '';
-        $ossDef->policy = '';
-        $ossDef->authPolicy = '';
-        $ossDef->expire = 0;
-        $ossDef->cors = '*';
-
-        $log = $this->log = new \stdClass();
-        $logDef = $log->default = new \stdClass();
-        $logDef->file = './storage/log.json';
-
         $ftp = $this->ftp = new \stdClass();
         $ftpDef = $ftp->default = new \stdClass();
         $ftpDef->host = '';
@@ -50,15 +33,6 @@ class ConfigExample
         $captcha->accessKeySecret = '';
         $captcha->signName = '';
         $captcha->templateCode = '';
-
-        $wechat = $this->wechat = new \stdClass();
-        $wechatDef = $wechat->default = new \stdClass();
-        $wechatDef->appId = '';
-        $wechatDef->appSecret = '';
-        $wechatDef->token = '';
-        $wechatDef->encodingAESKey = '';
-        $wechatDef->host = '';
-        $wechatDef->getUserAccessTokenUrl = '';
 
         $smtp = $this->smtp = new \stdClass();
         $smtpDef = $smtp->default = new \stdClass();
@@ -84,11 +58,6 @@ class ConfigExample
         $databaseDef->type = 'mysql';
         $databaseDef->user = 'root';
         $databaseDef->pass = '';
-
-        $command = $this->command = new \stdClass();
-        $command->host = 'https://moodrain.cn';
-        $command->user = '';
-        $command->pass = '';
     }
     public function json() {
         return json_encode($this, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
