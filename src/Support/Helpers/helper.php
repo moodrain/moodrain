@@ -89,7 +89,7 @@ function mvc_do_action($controller, $action) {
 
 function mvc_on() {
     $rs = mvc_do_action(...mvc_get_controller_action());
-    (empty($rs['code']) || empty($rs['msg']) || empty($rs['data'])) && $rs = rs($rs);
+    ! (array_key_exists('code', $rs) && array_key_exists('msg', $rs) && array_key_exists('data', $rs)) && $rs = rs($rs);
     mvc_render($rs);
 }
 
