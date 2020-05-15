@@ -1,12 +1,11 @@
-/.idea/
-/vendor/
+/.idea
+/vendor
 muyu.json
 index.php
 main.php
 composer.lock
 Caddyfile
-/config/
-/storage/mail/
-/storage/font/simyou.ttf
-/src/Other/
+/config
+/storage
+/src/Other
 deploy.php
