@@ -18,6 +18,9 @@ trait ToolCoupleTrait {
         $user = $conf['user'] ?? conf($muyuConfig . '.user');
         $pass = base64_decode($conf['pass'] ?? conf($muyuConfig . '.pass'));
         $db   = $conf['db']   ?? conf($muyuConfig . '.db', '');
+        if($type == 'sqlite') {
+            return new PDO("$type:$db", null, null, $attr);
+        }
         return new PDO("$type:host=$host;dbname=$db;charset=utf8", $user, $pass, $attr);
     }
 
