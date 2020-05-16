@@ -50,7 +50,7 @@ class Curl
         if(! $url) {
             return $this->url;
         }
-        $this->url = $url;
+        $this->url = strpos($url, 'http') === 0 ? $url : 'http://' . $url;
         return $this;
     }
 
@@ -350,6 +350,7 @@ class Curl
             $times = $this->retry;
             while($times-- > 0 && in_array(curl_errno($curl), $this->retryErrorCode)) {
                 $content = curl_exec($curl);
+                dd($this->fullUrl());
             }
         }
         if(curl_errno($curl) !== 0) {
@@ -377,15 +378,24 @@ class Curl
                         $continue = true;
                     }
                     if((strstr($key, '301') || strstr($key, '302') || strstr($key, '307') || strstr($key, '308')) && $redirectTime-- > 0) {
+                        $url = null;
                         foreach($response as $roww) {
-                            if(strpos($roww, 'Location: ') !== false) {
-                                $url = str_replace('Location: ', '', $roww);
+                            if(strpos(strtolower($roww), 'location: ') !== false) {
+                                $url = trim(str_replace('location: ', '', strtolower($roww)));
+                                if(substr($url, 0, 1) == '/') {
+                                    $info = parse_url($this->url);
+                                    $url = $info['scheme'] . '://' . $info['host'] . $url;
+                                }
                                 $this->initCurl();
                                 curl_setopt($this->curl, CURLOPT_URL, $url);
                                 break;
                             }
+                        }
+                        if($url != null && $url != $this->fullUrl()) {
                             return $this->handle($this->curl, true);
                         }
+                        $this->addError(-2, 'can not get redirect url');
+                        return false;
                     } else if($redirectTime <= 0) {
                         $this->addError(1, 'redirect too many times');
                         return false;
