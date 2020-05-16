@@ -350,7 +350,6 @@ class Curl
             $times = $this->retry;
             while($times-- > 0 && in_array(curl_errno($curl), $this->retryErrorCode)) {
                 $content = curl_exec($curl);
-                dd($this->fullUrl());
             }
         }
         if(curl_errno($curl) !== 0) {
