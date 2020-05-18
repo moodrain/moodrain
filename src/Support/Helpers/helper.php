@@ -82,17 +82,15 @@ function mvc_get_controller_action() {
 }
 
 function mvc_do_action($controller, $action) {
-    function mvc_do_action($controller, $action) {
-        $controllerName = 'App\\Controller\\' . ucfirst($controller) . 'Controller';
-        if(! class_exists($controllerName)) {
-            return ers('controller not found: ' . $controller);
-        }
-        $controller = new $controllerName;
-        if(! method_exists($controllerName, $action)) {
-            return ers('action not found: ' . $action);
-        }
-        return call_user_func([$controller, $action], Arr::except($_REQUEST, ['a', 'c']));
+    $controllerName = 'App\\Controller\\' . ucfirst($controller) . 'Controller';
+    if(! class_exists($controllerName)) {
+        return ers('controller not found: ' . $controller);
     }
+    $controller = new $controllerName;
+    if(! method_exists($controllerName, $action)) {
+        return ers('action not found: ' . $action);
+    }
+    return call_user_func([$controller, $action], Arr::except($_REQUEST, ['a', 'c']));
 }
 
 function mvc_on() {
