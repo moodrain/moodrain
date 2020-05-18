@@ -138,7 +138,7 @@ $builder->input([
     function bean($package = 'main.entity', $dir = 'bean') {
         !file_exists($dir) && mkdir($dir);
         foreach($this->tables as $tableName => $table)
-            file_put_contents($dir . '/' . ucfirst(Tool::hump(str_replace($this->tablePrefix, '', $tableName . '.java'))), $this->TableBuilder($tableName, $table, $this->tablePrefix, false, false)->bean($package)) ;
+            file_put_contents($dir . '/' . ucfirst(camel_case(str_replace($this->tablePrefix, '', $tableName . '.java'))), $this->TableBuilder($tableName, $table, $this->tablePrefix, false, false)->bean($package)) ;
         return $this;
     }
     function save($name = null,$mode = null) {
@@ -240,13 +240,13 @@ $builder->input([
             function bean($package = 'main.entity') {
                 $sql = '';
                 $package = 'package ' . $package . ';' . PHP_EOL;
-                $class =  PHP_EOL . 'public class ' . ucfirst(Tool::hump($this->table)) . PHP_EOL . '{' . PHP_EOL;
+                $class =  PHP_EOL . 'public class ' . ucfirst(camel_case($this->table)) . PHP_EOL . '{' . PHP_EOL;
                 foreach($this->fields as $f)
-                    $sql .= '   ' . 'private ' . $this->toJavaType($f['type']) . ' ' . Tool::hump($f['name']) . ';' . PHP_EOL;
+                    $sql .= '   ' . 'private ' . $this->toJavaType($f['type']) . ' ' . camel_case($f['name']) . ';' . PHP_EOL;
                 $sql .= PHP_EOL;
                 foreach($this->fields as $f) {
-                    $sql .= '   public ' . $this->toJavaType($f['type']) . ' ' . 'get' . ucfirst(Tool::hump($f['name'])) . '() { return ' . Tool::hump($f['name']) . '; }' . PHP_EOL;
-                    $sql .= '   public void set' . ucfirst(Tool::hump($f['name'])) . '(' . $this->toJavaType($f['type']) . ' ' . Tool::hump($f['name']) . ') { this.' . Tool::hump($f['name']) . ' = ' . Tool::hump($f['name']) . '; }' . PHP_EOL;
+                    $sql .= '   public ' . $this->toJavaType($f['type']) . ' ' . 'get' . ucfirst(camel_case($f['name'])) . '() { return ' . camel_case($f['name']) . '; }' . PHP_EOL;
+                    $sql .= '   public void set' . ucfirst(camel_case($f['name'])) . '(' . $this->toJavaType($f['type']) . ' ' . camel_case($f['name']) . ') { this.' . camel_case($f['name']) . ' = ' . camel_case($f['name']) . '; }' . PHP_EOL;
                 }
                 $sql = $package . $class . $sql . '}';
                 return $sql;

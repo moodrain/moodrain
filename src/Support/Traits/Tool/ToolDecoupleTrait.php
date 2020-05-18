@@ -71,12 +71,6 @@ trait ToolDecoupleTrait {
         return $array[array_rand($array)];
     }
 
-    static public function hump($str) {
-        return preg_replace_callback('/([-_]+([a-z]{1}))/i',function($matches){
-            return strtoupper($matches[2]);
-        }, $str);
-    }
-
     static public function abc123($in, $up = false) {
         $ascii = ord($in);
         switch($ascii) {
