@@ -113,7 +113,7 @@ trait ToolDecoupleTrait {
 
     static public function ext($filename) {
         $info = explode('.', basename($filename));
-        return $info[count($info)-1] ?? null;
+        return $info[last($info)] ?? null;
     }
 
     static public function name($filename) {

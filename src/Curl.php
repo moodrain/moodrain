@@ -33,7 +33,7 @@ class Curl
 
     public function __construct($url = null) {
         $this->initError();
-        $this->url = $url;
+        $this->url($url);
         $this->transfer = true;
         $this->timeout = 60;
         $this->retryErrorCode = [28, 35, 52];
@@ -57,9 +57,7 @@ class Curl
     public function fullUrl() {
         $url = $this->url;
         if($this->path) {
-            if(substr($this->url, count($this->url) - 1) != '/') {
-                $url .= '/';
-            }
+            mb_substr($this->url, -1) != '/' && $url .= '/';
             $url .= $this->path;
         }
         if($this->query) {

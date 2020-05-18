@@ -152,8 +152,8 @@ class FTP
         $files = [];
         foreach($ll as $l) {
             $l = explode(' ', $l);
-            $name = $l[count($l)-1];
-            $type = $l[0]{0};
+            $name = last($l);
+            $type = mb_substr($l[0], 0, 1);
             switch($type) {
                 case '-': $type = 'file';break;
                 case 'd': $type = 'directory';break;
