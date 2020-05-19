@@ -9,7 +9,7 @@ function db($key = 'default', $setConn = null) : PDO {
     return $conn[$key];
 }
 
-function genConn($muyuConfig = 'default', $conf = []) : PDO {
+function genConn($muyuConfig = 'default', $conf = []) {
     return Tool::pdo('database.' . $muyuConfig, $conf);
 }
 
