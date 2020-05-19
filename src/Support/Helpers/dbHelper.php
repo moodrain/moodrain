@@ -2,14 +2,14 @@
 
 use Muyu\Support\Tool;
 
-function db($key = 'default', $setConn = null) {
+function db($key = 'default', $setConn = null) : PDO {
     static $conn = [];
     $setConn && $conn[$key] = $setConn;
     empty($conn[$key]) && $conn[$key] = genConn($key);
     return $conn[$key];
 }
 
-function genConn($muyuConfig = 'default', $conf = []) {
+function genConn($muyuConfig = 'default', $conf = []) : PDO {
     return Tool::pdo('database.' . $muyuConfig, $conf);
 }
 
