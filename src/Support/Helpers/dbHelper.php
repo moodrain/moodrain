@@ -14,9 +14,14 @@ function genConn($muyuConfig = 'default', $conf = []) {
 }
 
 function dbQuery($sql, $para = [], $page = null, $limit = 20) {
+    $sql = trim($sql);
     $page !== null && $sql .= ' limit ' . ($page - 1) * $limit . ',' . $limit;
     $stmt = db()->prepare($sql);
-    $stmt->execute($para);
+    $execRs = $stmt->execute($para);
+    $action = strtolower(head(explode(' ', $sql)));
+    if(in_array($action, ['update', 'delete', 'insert'], true)) {
+        return $execRs;
+    }
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
