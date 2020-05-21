@@ -95,7 +95,8 @@ function mvc_do_action($controller, $action) {
 
 function mvc_on() {
     $rs = mvc_do_action(...mvc_get_controller_action());
-    ! (array_key_exists('code', $rs) && array_key_exists('msg', $rs) && array_key_exists('data', $rs)) && $rs = rs($rs);
+    is_object($rs) && ! (property_exists('code', $rs) && property_exists('msg', $rs) && property_exists('data', $rs)) && $rs = rs($rs);
+    is_array($rs) && ! (array_key_exists('code', $rs) && array_key_exists('msg', $rs) && array_key_exists('data', $rs)) && $rs = rs($rs);
     mvc_render($rs);
 }
 
