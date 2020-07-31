@@ -6,18 +6,11 @@ $helpers = [
     'src/Support/Helpers/helper.php',
 ];
 
-$require = function($path) use ($dir) {
-    if(! file_exists($dir . $path)) {
-        throw new \Exception('class not found: ' . $className);
-    }
-    require $dir . $path;
-};
-
 foreach($helpers as $helper) {
     $require($helper);
 }
 
-spl_autoload_register(function($className) use ($require) {
+spl_autoload_register(function($className) use ($dir) {
     $prefix = 'Muyu';
     $nameSpaces = explode('\\', $className);
     if(array_shift($nameSpaces) != $prefix) {
@@ -25,5 +18,8 @@ spl_autoload_register(function($className) use ($require) {
     }
     $baseName = array_pop($nameSpaces);
     $path = 'src/' . (empty($nameSpaces) ? '' : implode('/', $nameSpaces) . '/') . $baseName . '.php';
-    $require($path);
+    if(! file_exists($dir . $path)) {
+        throw new \Exception('class not found: ' . $className);
+    }
+    require $dir . $path;
 });
