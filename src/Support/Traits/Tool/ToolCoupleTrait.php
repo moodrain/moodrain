@@ -2,14 +2,9 @@
 
 namespace Muyu\Support\Traits\Tool;
 
-use Muyu\Support\Seeder;
 use \PDO;
 
 trait ToolCoupleTrait {
-
-    static public function fake($seeder = null) {
-        return (new Seeder($seeder))->seeder($seeder)->fake();
-    }
 
     static public function pdo($muyuConfig = 'database.default', $conf = null, $attr = null) {
         $attr = $attr ?? [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION];

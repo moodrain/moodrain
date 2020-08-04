@@ -7,7 +7,7 @@ $helpers = [
 ];
 
 foreach($helpers as $helper) {
-    $require($helper);
+    require $dir . $helper;
 }
 
 spl_autoload_register(function($className) use ($dir) {

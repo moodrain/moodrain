@@ -12,21 +12,15 @@ MoodRain
 * Domain Record
 * Excel Handler
 * FTP Client
-* Aliyun OSS
 
 ### Secondary
 
-* API Transit
 * POP3 Store
 * SMTP Client
-* Aliyun SMS
-* Wechat Public Account
 
 ### Informal
 
-* Bwh Migrate
 * Downloader
-* Lanzou Netdisk
 
 ## Install
 
