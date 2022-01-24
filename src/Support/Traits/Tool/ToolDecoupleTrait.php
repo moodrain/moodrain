@@ -96,7 +96,7 @@ trait ToolDecoupleTrait {
 
     static public function strBetween($str, $kw1, $kw2, $containKw = false) {
         $st = stripos($str, $kw1);
-        $postStr = substr($str, $st);
+        $postStr = substr($str, $st) + strlen($kw1);
         $ed = stripos($postStr, $kw2) + strlen($str) - strlen($postStr);
         if($st === false || $ed === false || $ed <= $st) {
             return $containKw ? $kw1 . $kw2 : '';
